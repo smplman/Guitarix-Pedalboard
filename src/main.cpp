@@ -9,18 +9,24 @@ https://github.com/alf45tar/Pedalino
 */
 
 #include <Arduino.h>
-#include <PluggableUSB.h>
+#include <MIDI_Controller.h>
+#include <menu.h>
+#include <TimerOne.h>
+#include <menuIO/serialIO.h>
+#include <menuIO/chainStream.h>
+#include <menuIO/clickEncoderIn.h>
+#include "SerialMenu.h"
+
+using namespace Menu;
+using namespace MIDI_CC;
+using namespace MCU;
+
+#define MAX_DEPTH 3
+// #define SERIAL_BUFFER_SIZE 256
 
 // Shift PWM
-// You can choose the latch pin yourself.
 const int ShiftPWM_latchPin = 13;
-
-// If your LED's turn on if the pin is low, set this to true, otherwise set it to false.
 const bool ShiftPWM_invertOutputs = true;
-
-// You can enable the option below to shift the PWM phase of each shift register by 8 compared to the previous.
-// This will slightly increase the interrupt load, but will prevent all PWM signals from becoming high at the same time.
-// This will be a bit easier on your power supply, because the current peaks are distributed.
 const bool ShiftPWM_balanceLoad = false;
 
 #include <ShiftPWM.h> // include ShiftPWM.h after setting the pins!
@@ -31,18 +37,10 @@ int numRegisters = 2;
 //int numRGBleds = numRegisters*8/3;
 int numRGBleds = 5;
 
-int redVal;
-int blueVal;
-int greenVal;
-int footSwitch;
-
-// MIDI
-#include <MIDI_Controller.h> // Include the library
-
-USBMIDI_Interface mi;
-
-using namespace MIDI_CC;
-using namespace MCU;
+uint8_t redVal;
+uint8_t blueVal;
+uint8_t greenVal;
+uint8_t footSwitch;
 
 const uint8_t channel = 1;
 
@@ -60,7 +58,7 @@ DigitalCC footSwitches[] = {
 
 // Rotary Potentiometer
 //Analog rPotentiometer(A0, MIDI_CC::Channel_Volume, 1);
-AnalogCC knobs[] = {
+Analog knobs[] = {
     {A11, MIDI_CC::General_Purpose_Controller_1, channel},
     {A10, MIDI_CC::General_Purpose_Controller_2, channel},
     {A9, MIDI_CC::General_Purpose_Controller_3, channel},
@@ -69,7 +67,7 @@ AnalogCC knobs[] = {
 // Slide Potentiometers
 //Analog lPotentiometer(A1, MIDI_CC::Pan, 1);
 
-AnalogCC sliders[] = {
+Analog sliders[] = {
     {A0, MIDI_CC::General_Purpose_Controller_5, channel},
     {A1, MIDI_CC::General_Purpose_Controller_6, channel},
     {A2, MIDI_CC::General_Purpose_Controller_7, channel},
@@ -79,44 +77,79 @@ AnalogCC sliders[] = {
 Bank bank(4);
 //BankSelector bankSelector(bank, { 2, 3, 4, 5, 6 });
 
+// Serial File Listing /////////////////////////////////////
+result filePick(eventMask event, navNode &nav, prompt &item);
+
+//SerialMenu filePickMenu("Backing Tracks", "/", filePick, enterEvent);
+
+//implementing the handler here after filePick is defined...
+// result filePick(eventMask event, navNode &nav, prompt &item)
+// {
+//   if (nav.root->navFocus == (navTarget *)&filePickMenu)
+//   {
+//     Serial.println(":play:" + filePickMenu.selectedFolder + filePickMenu.selectedFile);
+//   }
+//   return proceed;
+// }
+
+result stopAudio(eventMask event, navNode &nav, prompt &item)
+{
+  switch (event)
+  {
+  case enterEvent:
+    Serial.println(":stop");
+  }
+  return proceed;
+}
+
+// Encoder /////////////////////////////////////
+// #define encA A1
+// #define encB A0
+// #define encBtn 2
+
+// ClickEncoder clickEncoder(encA, encB, encBtn, 4);
+// ClickEncoderStream encStream(clickEncoder, 1);
+// void timerIsr() { clickEncoder.service(); }
+
+MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
+     //SUBMENU(filePickMenu),
+     OP("Stop Backing Track", stopAudio, anyEvent),
+     OP("Sub2", Menu::doNothing, anyEvent),
+     OP("Sub3", Menu::doNothing, anyEvent),
+     EXIT("<Back\r\n"));
+
+serialIn serial(Serial);
+MENU_INPUTS(in,
+            //&encStream,
+            &serial);
+
+MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(Serial), NONE);
+
+NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
+
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Start");
 
   // Sets the number of 8-bit registers that are used.
   ShiftPWM.SetAmountOfRegisters(numRegisters);
   ShiftPWM.Start(pwmFrequency, maxBrightness);
 
-  //bank.add(knobs, Bank::CHANGE_CHANNEL);
-  //bank.add(sliders, Bank::CHANGE_CHANNEL);
   bank.add(knobs, Bank::CHANGE_ADDRESS);
   bank.add(sliders, Bank::CHANGE_ADDRESS);
+
+  // Timer1.initialize(1000);
+  // Timer1.attachInterrupt(timerIsr);
+  //filePickMenu.begin();
 }
 
-unsigned long timePress = 0;
-unsigned long timePressLimit = 0;
-int clicks = 0;
 int modifying = 0;
 int currentState = 0;
 
 void loop()
 {
-  // Read pot values
-  //  redVal = analogRead(11) * (255./1023.);
-  //  greenVal = analogRead(10) * (255./1023.);
-  //  blueVal = analogRead(9) * (255./1023.);
-  //  ShiftPWM.SetRGB(1,redVal,greenVal,blueVal);
-  //  ShiftPWM.SetRGB(1,0,0,255);
-  //
-  //  footSwitch = digitalRead(2);
-  //
-  //  if(footSwitch) {
-  //    ShiftPWM.SetRGB(0,0,255,0); // Green
-  //    checkDoubleClick();
-  //  } else {
-  //    ShiftPWM.SetRGB(0,255,0,0);
-  //  }
+  nav.poll();
 
   // Read footswitches
   for (int i = 0; i < 5; i++)
@@ -151,22 +184,4 @@ void loop()
 
   // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
   MIDI_Controller.refresh();
-}
-
-void checkDoubleClick()
-{
-  if (clicks == 0)
-  {
-    timePress = millis();
-    timePressLimit = timePress + 1000;
-    clicks = 1;
-  }
-  else if (clicks == 1 && millis() < timePressLimit)
-  {
-    ShiftPWM.SetRGB(0, 0, 0, 255);
-    //set variables back to 0
-    timePress = 0;
-    timePressLimit = 0;
-    clicks = 0;
-  }
 }
