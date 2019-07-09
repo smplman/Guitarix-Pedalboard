@@ -9,15 +9,16 @@ https://github.com/alf45tar/Pedalino
 */
 
 #include <Arduino.h>
+#include <MIDI.h>
 #include <MIDI_Controller.h>
-#include <menu.h>
+//#include <menu.h>
 #include <TimerOne.h>
-#include <menuIO/serialIO.h>
-#include <menuIO/chainStream.h>
-#include <menuIO/clickEncoderIn.h>
-#include "SerialMenu.h"
+//#include <menuIO/serialIO.h>
+//#include <menuIO/chainStream.h>
+//#include <menuIO/clickEncoderIn.h>
+//#include "SerialMenu.h"
 
-using namespace Menu;
+//using namespace Menu;
 using namespace MIDI_CC;
 using namespace MCU;
 
@@ -58,7 +59,7 @@ DigitalCC footSwitches[] = {
 
 // Rotary Potentiometer
 //Analog rPotentiometer(A0, MIDI_CC::Channel_Volume, 1);
-Analog knobs[] = {
+AnalogCC knobs[] = {
     {A11, MIDI_CC::General_Purpose_Controller_1, channel},
     {A10, MIDI_CC::General_Purpose_Controller_2, channel},
     {A9, MIDI_CC::General_Purpose_Controller_3, channel},
@@ -67,7 +68,7 @@ Analog knobs[] = {
 // Slide Potentiometers
 //Analog lPotentiometer(A1, MIDI_CC::Pan, 1);
 
-Analog sliders[] = {
+AnalogCC sliders[] = {
     {A0, MIDI_CC::General_Purpose_Controller_5, channel},
     {A1, MIDI_CC::General_Purpose_Controller_6, channel},
     {A2, MIDI_CC::General_Purpose_Controller_7, channel},
@@ -78,7 +79,7 @@ Bank bank(4);
 //BankSelector bankSelector(bank, { 2, 3, 4, 5, 6 });
 
 // Serial File Listing /////////////////////////////////////
-result filePick(eventMask event, navNode &nav, prompt &item);
+//result filePick(eventMask event, navNode &nav, prompt &item);
 
 //SerialMenu filePickMenu("Backing Tracks", "/", filePick, enterEvent);
 
@@ -92,15 +93,15 @@ result filePick(eventMask event, navNode &nav, prompt &item);
 //   return proceed;
 // }
 
-result stopAudio(eventMask event, navNode &nav, prompt &item)
-{
-  switch (event)
-  {
-  case enterEvent:
-    Serial.println(":stop");
-  }
-  return proceed;
-}
+//result stopAudio(eventMask event, navNode &nav, prompt &item)
+//{
+//  switch (event)
+//  {
+//  case enterEvent:
+//    Serial.println(":stop");
+//  }
+//  return proceed;
+//}
 
 // Encoder /////////////////////////////////////
 // #define encA A1
@@ -111,21 +112,21 @@ result stopAudio(eventMask event, navNode &nav, prompt &item)
 // ClickEncoderStream encStream(clickEncoder, 1);
 // void timerIsr() { clickEncoder.service(); }
 
-MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
-     //SUBMENU(filePickMenu),
-     OP("Stop Backing Track", stopAudio, anyEvent),
-     OP("Sub2", Menu::doNothing, anyEvent),
-     OP("Sub3", Menu::doNothing, anyEvent),
-     EXIT("<Back\r\n"));
-
-serialIn serial(Serial);
-MENU_INPUTS(in,
-            //&encStream,
-            &serial);
-
-MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(Serial), NONE);
-
-NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
+//MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
+//     //SUBMENU(filePickMenu),
+//     OP("Stop Backing Track", stopAudio, anyEvent),
+//     OP("Sub2", Menu::doNothing, anyEvent),
+//     OP("Sub3", Menu::doNothing, anyEvent),
+//     EXIT("<Back\r\n"));
+//
+//serialIn serial(Serial);
+//MENU_INPUTS(in,
+//            //&encStream,
+//            &serial);
+//
+//MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(Serial), NONE);
+//
+//NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
 void setup()
 {
@@ -149,7 +150,7 @@ int currentState = 0;
 
 void loop()
 {
-  nav.poll();
+//  nav.poll();
 
   // Read footswitches
   for (int i = 0; i < 5; i++)
