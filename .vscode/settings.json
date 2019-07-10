@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.env.osx": {
+        "PATH": "/Users/speery/.platformio/penv/bin:/Users/speery/.platformio/penv:/Users/speery/google-cloud-sdk/bin:/Users/speery/.rvm/gems/ruby-2.4.1/bin:/Users/speery/.rvm/gems/ruby-2.4.1@global/bin:/Users/speery/.rvm/rubies/ruby-2.4.1/bin:/Users/speery/.nvm/versions/node/v8.11.3/bin:/usr/local/opt/python/libexec/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/speery/.rvm/bin:/usr/local/opt/fzf/bin",
+        "PLATFORMIO_CALLER": "vscode"
+    }
+}

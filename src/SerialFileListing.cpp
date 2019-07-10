@@ -80,8 +80,10 @@ void SerialFileListing::recieveData()
 void SerialFileListing::parseData()
 {
     static long ndx = 0;
-    char* cmd = strtok(tempChars,":");
-    char* s = strtok(NULL,",");
+    char* cmd = strtok(tempChars,"::");
+    Serial.println(cmd);
+    char* s = strtok(NULL,":");
+    Serial.println(s);
 
     if (String(cmd) == "ls")
     {
@@ -112,40 +114,45 @@ void SerialFileListing::parseData()
 
 long SerialFileListing::count()
 {
-  Serial.print(":count:");
+  Serial.print("::count::");
   Serial.println(dir);
 
   fetchingCount = true;
 
   while (fetchingCount){poll();}
 
+  Serial.print("count ");
+  Serial.println(countVal);
+
   return countVal;
 }
 
 long SerialFileListing::entryIdx(String name)
 {
-  Serial.print(":entryIdx:");
+  Serial.print("::entryIdx::");
   Serial.print(dir);
-  Serial.println(":" + name);
+  Serial.println("::" + name);
 
   fetchingEntryIdx = true;
 
   while (fetchingEntryIdx){poll();}
 
+  Serial.println("entryIdxVal" + entryIdxVal);
+
   return entryIdxVal;
 }
 String SerialFileListing::entry(long idx)
 {
-  Serial.print(":entry:");
+  Serial.print("::entry::");
   Serial.print(dir);
-  Serial.print(":");
+  Serial.print("::");
   Serial.println(idx);
 
   fetchingEntry = true;
 
   while (fetchingEntry){poll();}
 
-  // Serial.println(entryVal);
+  Serial.println("entryVal " + entryVal);
 
   return entryVal;
 }
