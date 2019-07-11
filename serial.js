@@ -2,7 +2,8 @@ const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
 // const PORTNAME = 'COM10';
 // const PORTNAME = '/dev/cu.usbmodem141101';
-const PORTNAME = '/dev/cu.usbserial-14110';
+// const PORTNAME = '/dev/cu.usbserial-14110';
+const PORTNAME = '/dev/cu.usbmodemMIDI1';
 
 const fs = require('fs');
 const basePath = './backing-tracks';
@@ -55,6 +56,7 @@ port.on('open', () => {
         }
 
         if (command === 'stop') {
+            console.log('Stop');
             if (audio) {
                 audio.kill();
             }

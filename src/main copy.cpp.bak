@@ -9,7 +9,7 @@ https://github.com/alf45tar/Pedalino
 */
 
 #include <Arduino.h>
-#include <MIDI_Controller.h>
+// #include <MIDI_Controller.h>
 #include <menu.h>
 #include <TimerOne.h>
 #include <menuIO/serialIO.h>
@@ -18,8 +18,8 @@ https://github.com/alf45tar/Pedalino
 #include "SerialMenu.h"
 
 using namespace Menu;
-using namespace MIDI_CC;
-using namespace MCU;
+// using namespace MIDI_CC;
+// using namespace MCU;
 
 // USBDebugMIDI_Interface midiInterface(115200);
 // HardwareSerialDebugMIDI_Interface midiInterface(Serial, 115200);
@@ -28,9 +28,9 @@ using namespace MCU;
 // #define SERIAL_BUFFER_SIZE 256
 
 // Shift PWM
-const int ShiftPWM_latchPin = 13;
-const bool ShiftPWM_invertOutputs = true;
-const bool ShiftPWM_balanceLoad = false;
+// const int ShiftPWM_latchPin = 13;
+// const bool ShiftPWM_invertOutputs = true;
+// const bool ShiftPWM_balanceLoad = false;
 
 // #include <ShiftPWM.h> // include ShiftPWM.h after setting the pins!
 
@@ -51,13 +51,13 @@ const uint8_t channel = 1;
 //DigitalCC button(2, MIDI_CC::Effects_1, channel);
 const int footSwitchPins[] = {2, 3, 4, 5, 6};
 int footSwitchState[5] = {0, 0, 0, 0, 0};
-DigitalCC footSwitches[] = {
-    {2, MIDI_CC::Effects_1, channel},
-    {3, MIDI_CC::Effects_2, channel},
-    {4, MIDI_CC::Effects_3, channel},
-    {5, MIDI_CC::Effects_4, channel},
-    {6, MIDI_CC::Effects_5, channel},
-};
+// DigitalCC footSwitches[] = {
+//     {2, MIDI_CC::Effects_1, channel},
+//     {3, MIDI_CC::Effects_2, channel},
+//     {4, MIDI_CC::Effects_3, channel},
+//     {5, MIDI_CC::Effects_4, channel},
+//     {6, MIDI_CC::Effects_5, channel},
+// };
 
 // Rotary Potentiometer
 //Analog rPotentiometer(A0, MIDI_CC::Channel_Volume, 1);
@@ -77,7 +77,8 @@ DigitalCC footSwitches[] = {
 //     {A3, MIDI_CC::General_Purpose_Controller_8, channel}};
 
 // Create Bank
-Bank bank(4);
+// Bank bank(4);
+//BankSelector bankSelector(bank, { 2, 3, 4, 5, 6 });
 
 // Serial File Listing /////////////////////////////////////
 result filePick(eventMask event, navNode &nav, prompt &item);
@@ -95,12 +96,12 @@ result filePick(eventMask event, navNode &nav, prompt &item)
 
 result stopAudio(eventMask event, navNode &nav, prompt &item)
 {
-  switch (event)
-  {
-  case enterEvent:
-    Serial.println("::stop");
-  }
-  return proceed;
+ switch (event)
+ {
+ case enterEvent:
+   Serial.println("::stop");
+ }
+ return proceed;
 }
 
 // Encoder /////////////////////////////////////
@@ -122,7 +123,9 @@ MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu:
 
 serialIn serial(Serial);
 //,&encStream
-MENU_INPUTS(in, &serial);
+MENU_INPUTS(in
+  ,&serial
+);
 MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(Serial), NONE);
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
@@ -130,7 +133,6 @@ NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 void setup()
 {
   Serial.begin(115200);
-  while(!Serial);
   Serial.println("Start");
 
   // Sets the number of 8-bit registers that are used.
@@ -152,37 +154,39 @@ void loop()
 {
   nav.poll();
 
-  // Read footswitches
-  for (int i = 0; i < 5; i++)
-  {
-    currentState = digitalRead(footSwitchPins[i]);
+  Serial.println("test");
 
-    // Set LED color if the effect is turned on or off or blue for modifying
-    if (modifying == i && currentState == LOW)
-    {
-      // Set LED to blue so we know which effect we are modifying
-      // ShiftPWM.SetRGB(i, 0, 0, 255);
-    }
-    else if (currentState == LOW)
-    {
-      // ShiftPWM.SetRGB(i, 0, 255, 0); // Green for ON
-    }
-    else
-    {
-      // ShiftPWM.SetRGB(i, 255, 0, 0); // Red for OFF
-    }
+  // // Read footswitches
+  // for (int i = 0; i < 5; i++)
+  // {
+  //   currentState = digitalRead(footSwitchPins[i]);
 
-    // Set MIDI Channel if an effect is turned on by foot switch
-    if (footSwitchState[i] == HIGH && currentState == LOW)
-    {
-      Serial.println(i);
-      bank.setBankSetting(i);
-      modifying = i;
-    }
+  //   // Set LED color if the effect is turned on or off or blue for modifying
+  //   if (modifying == i && currentState == LOW)
+  //   {
+  //     // Set LED to blue so we know which effect we are modifying
+  //     ShiftPWM.SetRGB(i, 0, 0, 255);
+  //   }
+  //   else if (currentState == LOW)
+  //   {
+  //     ShiftPWM.SetRGB(i, 0, 255, 0); // Green for ON
+  //   }
+  //   else
+  //   {
+  //     ShiftPWM.SetRGB(i, 255, 0, 0); // Red for OFF
+  //   }
 
-    footSwitchState[i] = currentState;
-  }
+  //   // Set MIDI Channel if an effect is turned on by foot switch
+  //   if (footSwitchState[i] == HIGH && currentState == LOW)
+  //   {
+  //     Serial.println(i);
+  //     // bank.setBankSetting(i);
+  //     modifying = i;
+  //   }
+
+  //   footSwitchState[i] = currentState;
+  // }
 
   // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
-  MIDI_Controller.refresh();
+  // MIDI_Controller.refresh();
 }
