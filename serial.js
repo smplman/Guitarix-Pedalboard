@@ -1,9 +1,7 @@
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
-const PORTNAME = 'COM16';
-// const PORTNAME = '/dev/cu.usbmodem141101';
-// const PORTNAME = '/dev/cu.usbserial-14110';
-// const PORTNAME = '/dev/cu.usbmodemMIDI1';
+// const PORTNAME = 'COM16';
+const PORTNAME = '/dev/cu.usbmodem141101';
 
 const DEBUG = false;
 

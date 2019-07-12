@@ -11,7 +11,6 @@ https://github.com/alf45tar/Pedalino
 #include <Arduino.h>
 #include <MIDI_Controller.h>
 #include <menu.h>
-// #include <TimerOne.h>
 #include <Adafruit_ZeroTimer.h>
 #include <menuIO/serialIO.h>
 #include <menuIO/chainStream.h>
@@ -21,6 +20,8 @@ https://github.com/alf45tar/Pedalino
 using namespace Menu;
 using namespace MIDI_CC;
 using namespace MCU;
+
+Adafruit_ZeroTimer zt4 = Adafruit_ZeroTimer(4);
 
 //USBDebugMIDI_Interface midiInterface(115200);
 // HardwareSerialDebugMIDI_Interface midiInterface(SerialUSB, 115200);
@@ -113,6 +114,9 @@ result stopAudio(eventMask event, navNode &nav, prompt &item)
 ClickEncoder clickEncoder(encA, encB, encBtn, 4);
 ClickEncoderStream encStream(clickEncoder, 1);
 void timerIsr() { clickEncoder.service(); }
+void TC4_Handler(){
+  Adafruit_ZeroTimer::timerHandler(4);
+}
 
 MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
   SUBMENU(filePickMenu),
@@ -141,9 +145,19 @@ void setup()
   // bank.add(knobs, Bank::CHANGE_ADDRESS);
   // bank.add(sliders, Bank::CHANGE_ADDRESS);
 
+  filePickMenu.begin();
+
   // Timer1.initialize(1000);
   // Timer1.attachInterrupt(timerIsr);
-  filePickMenu.begin();
+
+  /********************* Timer #4, 8 bit, one callback with adjustable period */
+  zt4.configure(TC_CLOCK_PRESCALER_DIV1024,     // prescaler
+                TC_COUNTER_SIZE_32BIT,        // bit width of timer/counter
+                TC_WAVE_GENERATION_MATCH_PWM // match style
+  );
+  zt4.setPeriodMatch(150, 100, 0);                                 // 1 match, channel 0
+  zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
+  zt4.enable(true);
 }
 
 int modifying = 0;
@@ -152,25 +166,20 @@ int currentState = 0;
 void loop()
 {
   nav.poll();
-  // clickEncoder.service();
 
   // Read footswitches
-  for (int i = 0; i < 5; i++)
-  {
+  for (int i = 0; i < 5; i++){
     currentState = digitalRead(footSwitchPins[i]);
 
     // Set LED color if the effect is turned on or off or blue for modifying
-    if (modifying == i && currentState == LOW)
-    {
+    if (modifying == i && currentState == LOW){
       // Set LED to blue so we know which effect we are modifying
       // ShiftPWM.SetRGB(i, 0, 0, 255);
     }
-    else if (currentState == LOW)
-    {
+    else if (currentState == LOW){
       // ShiftPWM.SetRGB(i, 0, 255, 0); // Green for ON
     }
-    else
-    {
+    else{
       // ShiftPWM.SetRGB(i, 255, 0, 0); // Red for OFF
     }
 
@@ -185,6 +194,6 @@ void loop()
     footSwitchState[i] = currentState;
   }
 
-  // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
-  // MIDI_Controller.refresh();
+    // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
+    // MIDI_Controller.refresh();
 }
