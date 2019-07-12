@@ -12,6 +12,7 @@ https://github.com/alf45tar/Pedalino
 #include <MIDI_Controller.h>
 #include <menu.h>
 #include <Adafruit_ZeroTimer.h>
+#include <Adafruit_NeoPXL8.h>
 #include <menuIO/serialIO.h>
 #include <menuIO/chainStream.h>
 #include <menuIO/clickEncoderIn.h>
@@ -28,7 +29,6 @@ Adafruit_ZeroTimer zt4 = Adafruit_ZeroTimer(4);
 // USBSerialMIDI_Interface midiInterface(SerialUSB, 115200);
 
 #define MAX_DEPTH 3
-// #define SERIAL_BUFFER_SIZE 256
 
 // Shift PWM
 const int ShiftPWM_latchPin = 13;
@@ -87,19 +87,15 @@ result filePick(eventMask event, navNode &nav, prompt &item);
 SerialMenu filePickMenu("Backing Tracks", "/", filePick, enterEvent);
 
 // implementing the handler here after filePick is defined...
-result filePick(eventMask event, navNode &nav, prompt &item)
-{
-  if (nav.root->navFocus == (navTarget *)&filePickMenu)
-  {
+result filePick(eventMask event, navNode &nav, prompt &item){
+  if (nav.root->navFocus == (navTarget *)&filePickMenu){
     SerialUSB.println("::play::" + filePickMenu.selectedFolder + filePickMenu.selectedFile);
   }
   return proceed;
 }
 
-result stopAudio(eventMask event, navNode &nav, prompt &item)
-{
-  switch (event)
-  {
+result stopAudio(eventMask event, navNode &nav, prompt &item){
+  switch (event){
   case enterEvent:
     SerialUSB.println("::stop");
   }
@@ -114,9 +110,7 @@ result stopAudio(eventMask event, navNode &nav, prompt &item)
 ClickEncoder clickEncoder(encA, encB, encBtn, 4);
 ClickEncoderStream encStream(clickEncoder, 1);
 void timerIsr() { clickEncoder.service(); }
-void TC4_Handler(){
-  Adafruit_ZeroTimer::timerHandler(4);
-}
+void TC4_Handler(){ Adafruit_ZeroTimer::timerHandler(4); }
 
 MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
   SUBMENU(filePickMenu),
@@ -132,8 +126,7 @@ MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(SerialUSB), NONE);
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
-void setup()
-{
+void setup(){
   SerialUSB.begin(115200);
   while(!SerialUSB);
   SerialUSB.println("Start");
@@ -155,7 +148,7 @@ void setup()
                 TC_COUNTER_SIZE_32BIT,        // bit width of timer/counter
                 TC_WAVE_GENERATION_MATCH_PWM // match style
   );
-  zt4.setPeriodMatch(150, 100, 0);                                 // 1 match, channel 0
+  zt4.setPeriodMatch(500, 100, 0);                                 // 1 match, channel 0
   zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
   zt4.enable(true);
 }
@@ -163,8 +156,7 @@ void setup()
 int modifying = 0;
 int currentState = 0;
 
-void loop()
-{
+void loop(){
   nav.poll();
 
   // Read footswitches
@@ -195,5 +187,5 @@ void loop()
   }
 
     // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
-    // MIDI_Controller.refresh();
+    MIDI_Controller.refresh();
 }
