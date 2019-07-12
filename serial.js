@@ -1,9 +1,11 @@
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
-// const PORTNAME = 'COM10';
+const PORTNAME = 'COM16';
 // const PORTNAME = '/dev/cu.usbmodem141101';
 // const PORTNAME = '/dev/cu.usbserial-14110';
-const PORTNAME = '/dev/cu.usbmodemMIDI1';
+// const PORTNAME = '/dev/cu.usbmodemMIDI1';
+
+const DEBUG = false;
 
 const fs = require('fs');
 const basePath = './backing-tracks';
@@ -41,13 +43,14 @@ port.on('open', () => {
 
         // Only show menu data
         //console.log(args);
-        console.log(data);
+        // if(DEBUG)
+        // console.log(data);
         if (args[0]) {
-            //console.log(args[0]);
+            console.log(args[0]);
         }
 
         if (command === 'play') {
-            console.log('Play ' + basePath + path);
+            if (DEBUG)console.log('Play ' + basePath + path);
             // If already playing stop
             if (audio) audio.kill();
             audio = player.play(basePath + path, { mplayer: ['-loop', 0] }, function (err) {
@@ -56,7 +59,7 @@ port.on('open', () => {
         }
 
         if (command === 'stop') {
-            console.log('Stop');
+            if (DEBUG)console.log('Stop');
             if (audio) {
                 audio.kill();
             }
@@ -66,7 +69,7 @@ port.on('open', () => {
             //console.log('Listing ' + basePath + path);
             fs.readdir(basePath + path, function (err, items) {
                 let res = '<listing::' + items.join() + '>\r\n';
-                // console.log("Sending: ", res);
+                if (DEBUG)console.log("Sending: ", res);
                 port.write(res);
             });
         }
@@ -75,7 +78,7 @@ port.on('open', () => {
             //console.log('Count ' + basePath + path);
             fs.readdir(basePath + path, function (err, items) {
                 let res = '<count::' + items.length + '>\r\n';
-                console.log("Sending: ", res);
+                if (DEBUG)console.log("Sending: ", res);
                 port.write(res);
             });
         }
@@ -87,7 +90,7 @@ port.on('open', () => {
                 let item = items[file];
                 // let res = '<entry:' + items[file] + '>\r\n';
                 let res = '<entry::' + item.name + (item.isDirectory() ? '/' : '') + '>\r\n';
-                console.log("Sending: ", res);
+                if (DEBUG)console.log("Sending: ", res);
                 port.write(res);
             });
         }
@@ -97,7 +100,7 @@ port.on('open', () => {
             fs.readdir(basePath + path, function (err, items) {
                 // console.log('ITEMS!!',items);
                 let res = '<entryIdx::' + items.indexOf(file) + '>\r\n';
-                console.log("Sending: ", res);
+                if (DEBUG)console.log("Sending: ", res);
                 port.write(res);
             });
         }

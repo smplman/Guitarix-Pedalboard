@@ -11,7 +11,8 @@ https://github.com/alf45tar/Pedalino
 #include <Arduino.h>
 #include <MIDI_Controller.h>
 #include <menu.h>
-#include <TimerOne.h>
+// #include <TimerOne.h>
+#include <Adafruit_ZeroTimer.h>
 #include <menuIO/serialIO.h>
 #include <menuIO/chainStream.h>
 #include <menuIO/clickEncoderIn.h>
@@ -21,8 +22,9 @@ using namespace Menu;
 using namespace MIDI_CC;
 using namespace MCU;
 
-// USBDebugMIDI_Interface midiInterface(115200);
-// HardwareSerialDebugMIDI_Interface midiInterface(Serial, 115200);
+//USBDebugMIDI_Interface midiInterface(115200);
+// HardwareSerialDebugMIDI_Interface midiInterface(SerialUSB, 115200);
+// USBSerialMIDI_Interface midiInterface(SerialUSB, 115200);
 
 #define MAX_DEPTH 3
 // #define SERIAL_BUFFER_SIZE 256
@@ -88,7 +90,7 @@ result filePick(eventMask event, navNode &nav, prompt &item)
 {
   if (nav.root->navFocus == (navTarget *)&filePickMenu)
   {
-    Serial.println("::play::" + filePickMenu.selectedFolder + filePickMenu.selectedFile);
+    SerialUSB.println("::play::" + filePickMenu.selectedFolder + filePickMenu.selectedFile);
   }
   return proceed;
 }
@@ -98,7 +100,7 @@ result stopAudio(eventMask event, navNode &nav, prompt &item)
   switch (event)
   {
   case enterEvent:
-    Serial.println("::stop");
+    SerialUSB.println("::stop");
   }
   return proceed;
 }
@@ -106,7 +108,7 @@ result stopAudio(eventMask event, navNode &nav, prompt &item)
 // Encoder /////////////////////////////////////
 #define encA A1
 #define encB A0
-#define encBtn 10
+#define encBtn 7
 
 ClickEncoder clickEncoder(encA, encB, encBtn, 4);
 ClickEncoderStream encStream(clickEncoder, 1);
@@ -120,18 +122,17 @@ MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu:
   EXIT("<Back\r\n")
 );
 
-serialIn serial(Serial);
-//,&encStream
-MENU_INPUTS(in, &serial);
-MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(Serial), NONE);
+serialIn serial(SerialUSB);
+MENU_INPUTS(in, &serial, &encStream);
+MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(SerialUSB), NONE);
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
 void setup()
 {
-  Serial.begin(115200);
-  while(!Serial);
-  Serial.println("Start");
+  SerialUSB.begin(115200);
+  while(!SerialUSB);
+  SerialUSB.println("Start");
 
   // Sets the number of 8-bit registers that are used.
   // ShiftPWM.SetAmountOfRegisters(numRegisters);
@@ -140,8 +141,8 @@ void setup()
   // bank.add(knobs, Bank::CHANGE_ADDRESS);
   // bank.add(sliders, Bank::CHANGE_ADDRESS);
 
-  Timer1.initialize(1000);
-  Timer1.attachInterrupt(timerIsr);
+  // Timer1.initialize(1000);
+  // Timer1.attachInterrupt(timerIsr);
   filePickMenu.begin();
 }
 
@@ -151,6 +152,7 @@ int currentState = 0;
 void loop()
 {
   nav.poll();
+  // clickEncoder.service();
 
   // Read footswitches
   for (int i = 0; i < 5; i++)
@@ -175,7 +177,7 @@ void loop()
     // Set MIDI Channel if an effect is turned on by foot switch
     if (footSwitchState[i] == HIGH && currentState == LOW)
     {
-      Serial.println(i);
+      SerialUSB.println(i);
       bank.setBankSetting(i);
       modifying = i;
     }
@@ -184,5 +186,5 @@ void loop()
   }
 
   // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
-  MIDI_Controller.refresh();
+  // MIDI_Controller.refresh();
 }

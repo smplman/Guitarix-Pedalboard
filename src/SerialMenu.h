@@ -102,7 +102,7 @@ public:
             if (nav.root->navFocus != nav.target)
             {                                                                                                        //on sd card entry
                 nav.sel = ((SDMenuT<FS> *)(&item))->entryIdx(((SDMenuT<FS> *)(&item))->selectedFile) + USE_BACKDOTS; //restore context
-                // Serial.println(nav.sel);
+                // SerialUSB.println(nav.sel);
             }
         }
         return proceed;
@@ -119,7 +119,7 @@ public:
 
                 if (selFile.endsWith("/"))
                 {
-                    // Serial.print("\nOpen folder...");
+                    // SerialUSB.print("\nOpen folder...");
                     //open folder (reusing the menu)
                     folderName += selFile;
                     SDMenuT<FS>::goFolder(folderName);
@@ -128,7 +128,7 @@ public:
                 }
                 else
                 {
-                    //Serial.print("\nFile selected:");
+                    //SerialUSB.print("\nFile selected:");
                     //select a file and return
                     selectedFile = selFile;
                     selectedFolder = folderName;
@@ -176,8 +176,8 @@ public:
             len -= out.printRaw("[..]", len);
         else
             len -= out.printRaw(FS::entry(out.tops[root.level] + idx - USE_BACKDOTS).c_str(), len);
-        Serial.println("");
-        Serial.println("");
+        SerialUSB.println("");
+        SerialUSB.println("");
         return len;
     }
 };

@@ -2,7 +2,7 @@
 
 SerialFileListing::SerialFileListing()
 {
- // Serial.println("SerialFileListing");
+ // SerialUSB.println("SerialFileListing");
   byte numChars = 64;
   charSize = numChars;
   receivedChars = new char[charSize];
@@ -43,8 +43,8 @@ void SerialFileListing::recvWithStartEndMarkers()
     char endMarker = '>';
     char rc;
 
-    while (Serial.available() > 0 && newData == false) {
-        rc = Serial.read();
+    while (SerialUSB.available() > 0 && newData == false) {
+        rc = SerialUSB.read();
 
         if (recvInProgress == true) {
             if (rc != endMarker) {
@@ -83,7 +83,7 @@ void SerialFileListing::parseData()
     char* cmd = strtok(tempChars,"::");
     Serial.println(cmd);
     char* s = strtok(NULL,":");
-    Serial.println(s);
+    // SerialUSB.println(s);
 
     if (String(cmd) == "ls")
     {
@@ -114,45 +114,45 @@ void SerialFileListing::parseData()
 
 long SerialFileListing::count()
 {
-  Serial.print("::count::");
-  Serial.println(dir);
+  SerialUSB.print("::count::");
+  SerialUSB.println(dir);
 
   fetchingCount = true;
 
   while (fetchingCount){poll();}
 
-  Serial.print("count ");
-  Serial.println(countVal);
+  // SerialUSB.print("count ");
+  // SerialUSB.println(countVal);
 
   return countVal;
 }
 
 long SerialFileListing::entryIdx(String name)
 {
-  Serial.print("::entryIdx::");
-  Serial.print(dir);
-  Serial.println("::" + name);
+  SerialUSB.print("::entryIdx::");
+  SerialUSB.print(dir);
+  SerialUSB.println("::" + name);
 
   fetchingEntryIdx = true;
 
   while (fetchingEntryIdx){poll();}
 
-  Serial.println("entryIdxVal" + entryIdxVal);
+  // SerialUSB.println("entryIdxVal" + entryIdxVal);
 
   return entryIdxVal;
 }
 String SerialFileListing::entry(long idx)
 {
-  Serial.print("::entry::");
-  Serial.print(dir);
-  Serial.print("::");
-  Serial.println(idx);
+  SerialUSB.print("::entry::");
+  SerialUSB.print(dir);
+  SerialUSB.print("::");
+  SerialUSB.println(idx);
 
   fetchingEntry = true;
 
   while (fetchingEntry){poll();}
 
-  Serial.println("entryVal " + entryVal);
+  // SerialUSB.println("entryVal " + entryVal);
 
   return entryVal;
 }
