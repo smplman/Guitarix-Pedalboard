@@ -1,13 +1,97 @@
-/*
-https://medium.com/@atippy83/guitarix-the-pi-dle-board-8d6298ca8e42
-https://arre234.blogspot.com/2018/02/linux-portable-wifi-guitar-amp-on.html
+/**
+  Name: Guitarix-Pedalboard
+  Purpose: MIDI Controller for Guitarix
 
-https://github.com/tttapa/MIDI_controller
-https://github.com/tttapa/MIDI_controller/wiki/Library-documentation
-
-https://github.com/alf45tar/Pedalino
+  @author Stephen Peery
+  @version 0.5 7/14/19
+  @email smp4488_AT_gmail.com
+  @github https://github.com/smp4488/Guitarix-Pedalboard
 */
 
+/*
+                           +--------+
+                  +--------+ Micro  +--------+
+                  |        | USB A/B|        |
+                  |        +--------+        |
+                  | [D]1/TX           VIN[ ] |
+                  |                          |
+                  | [D]0/RX           GND[ ] |
+                  |                          |
+                  | [ ]RST           AREF[ ] |
+                  |                          |
+                  | [ ]GND            VCC[ ] |
+                  |              21/SCL[F]   |
+                  | [E]2               A3[C] |
+                  |              20/SDA[F]   |
+                  |~[B]3   +--------+  A2[C] |
+                  |        | SamD21 |        |
+                  |~[B]4   |  G18   |  A1[C] |
+                  |        |        |        |
+                  |~[ ]5   +--------+  A0[C] |
+                  |                          |
+                  |~[A]6               13[A]~|
+                  |        +--------+        |
+                  | [D]7   | Prog   |  12[A]~|
+                  |        | Header |        |
+                  |~[B]8   +--------+  11[A]~|
+                  |                          |
+                  |~[B]9               10[A]~|
+                  +--------------------------+
+                  Sparkfun SAMD21 Mini Breakout
+ */
+
+//------------------------------------------------------------------
+// [A]		Foot Switches
+//------------------------------------------------------------------
+// Connect commons to GND
+#define FOOTSWITCH_1_PIN (6)
+#define FOOTSWITCH_2_PIN (10)
+#define FOOTSWITCH_3_PIN (11)
+#define FOOTSWITCH_4_PIN (12)
+#define FOOTSWITCH_5_PIN (13)
+
+//------------------------------------------------------------------
+// [B]		Rotary Potentiometers
+//------------------------------------------------------------------
+// Connect + to VCC and - to GND
+#define ROTARY_1_PIN (3)
+#define ROTARY_2_PIN (4)
+#define ROTARY_3_PIN (8)
+#define ROTARY_4_PIN (9)
+
+//------------------------------------------------------------------
+// [C]		Slide Potentiometers
+//------------------------------------------------------------------
+// Connect + to VCC and - to GND
+#define SLIDE_1_PIN (A0)
+#define SLIDE_2_PIN (A1)
+#define SLIDE_3_PIN (A2)
+#define SLIDE_4_PIN (A3)
+
+
+//------------------------------------------------------------------
+// [D]		Rotary Encoder
+//------------------------------------------------------------------
+// Connect + to VCC and - to GND
+#define ENCODER_A_PIN (1)
+#define ENCODER_B_PIN (0)
+#define ENCODER_BTN_PIN (7)
+
+//------------------------------------------------------------------
+// [E]		LEDS
+//------------------------------------------------------------------
+// Connect + to VCC and - to GND
+#define LED_DATA_PIN (2)
+
+//------------------------------------------------------------------
+// [F]		SSD1309 OLED Display
+//------------------------------------------------------------------
+// Connect + to VCC and - to GND
+#define DISPLAY_SDA (20)
+#define DISPLAY_SCL (21)
+
+
+// #define ARDUINO_SAMD_ZERO
 #include <Arduino.h>
 #include <MIDI_Controller.h>
 #include <menu.h>
@@ -24,63 +108,47 @@ using namespace MCU;
 
 Adafruit_ZeroTimer zt4 = Adafruit_ZeroTimer(4);
 
-//USBDebugMIDI_Interface midiInterface(115200);
-// HardwareSerialDebugMIDI_Interface midiInterface(SerialUSB, 115200);
-// USBSerialMIDI_Interface midiInterface(SerialUSB, 115200);
+#define NUM_LED 5
+int8_t pins[1] = {LED_DATA_PIN};
+Adafruit_NeoPXL8 leds(NUM_LED, pins, NEO_GRB);
 
 #define MAX_DEPTH 3
-
-// Shift PWM
-const int ShiftPWM_latchPin = 13;
-const bool ShiftPWM_invertOutputs = true;
-const bool ShiftPWM_balanceLoad = false;
-
-// #include <ShiftPWM.h> // include ShiftPWM.h after setting the pins!
-
-unsigned char maxBrightness = 255;
-unsigned char pwmFrequency = 75;
-int numRegisters = 2;
-//uint8_t numRGBleds = numRegisters*8/3;
-int numRGBleds = 5;
 
 uint8_t redVal;
 uint8_t blueVal;
 uint8_t greenVal;
 uint8_t footSwitch;
 
+// Create Bank
+Bank bank(4);
 const uint8_t channel = 1;
 
 // Foot switches
-//DigitalCC button(2, MIDI_CC::Effects_1, channel);
-const int footSwitchPins[] = {2, 3, 4, 5, 6};
+const int footSwitchPins[5] = {6, 10, 11, 12, 13};
 int footSwitchState[5] = {0, 0, 0, 0, 0};
 DigitalCC footSwitches[] = {
-    {2, MIDI_CC::Effects_1, channel},
-    {3, MIDI_CC::Effects_2, channel},
-    {4, MIDI_CC::Effects_3, channel},
-    {5, MIDI_CC::Effects_4, channel},
-    {6, MIDI_CC::Effects_5, channel},
+  {6, MIDI_CC::Effects_1, channel},
+  {10, MIDI_CC::Effects_2, channel},
+  {11, MIDI_CC::Effects_3, channel},
+  {12, MIDI_CC::Effects_4, channel},
+  {13, MIDI_CC::Effects_5, channel},
 };
 
 // Rotary Potentiometer
-//Analog rPotentiometer(A0, MIDI_CC::Channel_Volume, 1);
 // AnalogCC knobs[] = {
-//     {A11, MIDI_CC::General_Purpose_Controller_1, channel},
-//     {A10, MIDI_CC::General_Purpose_Controller_2, channel},
-//     {A9, MIDI_CC::General_Purpose_Controller_3, channel},
-//     {A8, MIDI_CC::General_Purpose_Controller_4, channel}};
+//   {3, MIDI_CC::General_Purpose_Controller_1, channel},
+//   {4, MIDI_CC::General_Purpose_Controller_2, channel},
+//   {8, MIDI_CC::General_Purpose_Controller_3, channel},
+//   {9, MIDI_CC::General_Purpose_Controller_4, channel}
+// };
 
 // Slide Potentiometers
-//Analog lPotentiometer(A1, MIDI_CC::Pan, 1);
-
 // AnalogCC sliders[] = {
-//     {A0, MIDI_CC::General_Purpose_Controller_5, channel},
-//     {A1, MIDI_CC::General_Purpose_Controller_6, channel},
-//     {A2, MIDI_CC::General_Purpose_Controller_7, channel},
-//     {A3, MIDI_CC::General_Purpose_Controller_8, channel}};
-
-// Create Bank
-Bank bank(4);
+//   {A0, MIDI_CC::General_Purpose_Controller_5, channel},
+//   {A1, MIDI_CC::General_Purpose_Controller_6, channel},
+//   {A2, MIDI_CC::General_Purpose_Controller_7, channel},
+//   {A3, MIDI_CC::General_Purpose_Controller_8, channel}
+// };
 
 // Serial File Listing /////////////////////////////////////
 result filePick(eventMask event, navNode &nav, prompt &item);
@@ -103,11 +171,7 @@ result stopAudio(eventMask event, navNode &nav, prompt &item){
 }
 
 // Encoder /////////////////////////////////////
-#define encA A1
-#define encB A0
-#define encBtn 7
-
-ClickEncoder clickEncoder(encA, encB, encBtn, 4);
+ClickEncoder clickEncoder(ENCODER_A_PIN, ENCODER_B_PIN, ENCODER_BTN_PIN, 4);
 ClickEncoderStream encStream(clickEncoder, 1);
 void timerIsr() { clickEncoder.service(); }
 void TC4_Handler(){ Adafruit_ZeroTimer::timerHandler(4); }
@@ -131,17 +195,15 @@ void setup(){
   while(!SerialUSB);
   SerialUSB.println("Start");
 
-  // Sets the number of 8-bit registers that are used.
-  // ShiftPWM.SetAmountOfRegisters(numRegisters);
-  // ShiftPWM.Start(pwmFrequency, maxBrightness);
-
   // bank.add(knobs, Bank::CHANGE_ADDRESS);
   // bank.add(sliders, Bank::CHANGE_ADDRESS);
 
-  filePickMenu.begin();
+  // filePickMenu.begin();
 
-  // Timer1.initialize(1000);
-  // Timer1.attachInterrupt(timerIsr);
+  // LEDs
+  leds.begin();
+  leds.setBrightness(30);
+  // leds.setPixelColor(0, 0, 255, 0);
 
   /********************* Timer #4, 8 bit, one callback with adjustable period */
   zt4.configure(TC_CLOCK_PRESCALER_DIV1024,     // prescaler
@@ -153,26 +215,27 @@ void setup(){
   zt4.enable(true);
 }
 
-int modifying = 0;
-int currentState = 0;
+uint8_t modifying = 0;
+uint8_t currentState = 0;
 
 void loop(){
+  leds.show();
   nav.poll();
 
   // Read footswitches
-  for (int i = 0; i < 5; i++){
+  for (uint8_t i = 0; i < 5; i++){
     currentState = digitalRead(footSwitchPins[i]);
 
     // Set LED color if the effect is turned on or off or blue for modifying
     if (modifying == i && currentState == LOW){
       // Set LED to blue so we know which effect we are modifying
-      // ShiftPWM.SetRGB(i, 0, 0, 255);
+      leds.setPixelColor(i, 0, 0, 255);
     }
     else if (currentState == LOW){
-      // ShiftPWM.SetRGB(i, 0, 255, 0); // Green for ON
+      leds.setPixelColor(i, 0, 255, 0);
     }
     else{
-      // ShiftPWM.SetRGB(i, 255, 0, 0); // Red for OFF
+      leds.setPixelColor(i, 255, 0, 0);
     }
 
     // Set MIDI Channel if an effect is turned on by foot switch
