@@ -73,9 +73,9 @@
 // [D]		Rotary Encoder
 //------------------------------------------------------------------
 // Connect + to VCC and - to GND
-#define ENCODER_A_PIN (1)
-#define ENCODER_B_PIN (0)
-#define ENCODER_BTN_PIN (7)
+#define ENCODER_A_PIN (9)//(1)
+#define ENCODER_B_PIN (8)//(0)
+#define ENCODER_BTN_PIN (7)//(7)
 
 //------------------------------------------------------------------
 // [E]		LEDS
@@ -90,13 +90,39 @@
 #define DISPLAY_SDA (20)
 #define DISPLAY_SCL (21)
 
+#define DISPLAY_CLOCK (13) //(23)//(11)
+#define DISPLAY_DATA (11) //(22)//(12)
+#define DISPLAY_CS (10) //(13)
+#define DISPLAY_DC (A0)
 
+/*
+SSD1309 128X64_NONAME2 https://github.com/olikraus/u8g2/wiki/u8g2setupcpp#ssd1309-128x64_noname2
+
+SPI full framebuffer, size = 1024 bytes
+U8G2_SSD1309_128X64_NONAME2_F_4W_SW_SPI(rotation, clock, data, cs, dc[, reset])
+
+I2C full framebuffer, size = 1024 bytes
+U8G2_SSD1309_128X64_NONAME2_F_SW_I2C(rotation, clock, data [, reset])
+ */
+
+/*
+SSD1309 128X64_NONAME0 https://github.com/olikraus/u8g2/wiki/u8g2setupcpp#ssd1309-128x64_noname0
+
+SPI full framebuffer, size = 1024 bytes
+U8G2_SSD1309_128X64_NONAME0_F_4W_SW_SPI(rotation, clock, data, cs, dc [, reset])
+
+I2C full framebuffer, size = 1024 bytes
+U8G2_SSD1309_128X64_NONAME0_F_SW_I2C(rotation, clock, data [, reset])
+
+ */
 // #define ARDUINO_SAMD_ZERO
 #include <Arduino.h>
 #include <MIDI_Controller.h>
 #include <menu.h>
 #include <Adafruit_ZeroTimer.h>
 #include <Adafruit_NeoPXL8.h>
+#include <U8g2lib.h>
+#include <menuIO/u8g2Out.h>
 #include <menuIO/serialIO.h>
 #include <menuIO/chainStream.h>
 #include <menuIO/clickEncoderIn.h>
@@ -126,13 +152,13 @@ const uint8_t channel = 1;
 // Foot switches
 const int footSwitchPins[5] = {6, 10, 11, 12, 13};
 int footSwitchState[5] = {0, 0, 0, 0, 0};
-DigitalCC footSwitches[] = {
-  {6, MIDI_CC::Effects_1, channel},
-  {10, MIDI_CC::Effects_2, channel},
-  {11, MIDI_CC::Effects_3, channel},
-  {12, MIDI_CC::Effects_4, channel},
-  {13, MIDI_CC::Effects_5, channel},
-};
+// DigitalCC footSwitches[] = {
+//   {6, MIDI_CC::Effects_1, channel},
+//   {10, MIDI_CC::Effects_2, channel},
+//   {11, MIDI_CC::Effects_3, channel},
+//   {12, MIDI_CC::Effects_4, channel},
+//   {13, MIDI_CC::Effects_5, channel},
+// };
 
 // Rotary Potentiometer
 // AnalogCC knobs[] = {
@@ -149,6 +175,29 @@ DigitalCC footSwitches[] = {
 //   {A2, MIDI_CC::General_Purpose_Controller_7, channel},
 //   {A3, MIDI_CC::General_Purpose_Controller_8, channel}
 // };
+
+// SSD1309 OLED Display
+U8G2_SSD1309_128X64_NONAME2_1_4W_SW_SPI u8g2(U8G2_R0, DISPLAY_CLOCK, DISPLAY_DATA, DISPLAY_CS, DISPLAY_DC);
+#define fontName u8g2_font_5x7_tf
+#define fontX 5
+#define fontY 9
+#define offsetX 0
+#define offsetY 0
+#define U8_Width 128
+#define U8_Height 64
+
+// define menu colors --------------------------------------------------------
+//each color is in the format:
+//  {{disabled normal,disabled selected},{enabled normal,enabled selected, enabled editing}}
+// this is a monochromatic color table
+const colorDef<uint8_t> colors[] MEMMODE = {
+    {{0, 0}, {0, 1, 1}}, //bgColor
+    {{1, 1}, {1, 0, 0}}, //fgColor
+    {{1, 1}, {1, 0, 0}}, //valColor
+    {{1, 1}, {1, 0, 0}}, //unitColor
+    {{0, 1}, {0, 0, 1}}, //cursorColor
+    {{1, 1}, {1, 0, 0}}, //titleColor
+};
 
 // Serial File Listing /////////////////////////////////////
 result filePick(eventMask event, navNode &nav, prompt &item);
@@ -186,9 +235,10 @@ MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu:
 
 serialIn serial(SerialUSB);
 MENU_INPUTS(in, &serial, &encStream);
-MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(SerialUSB), NONE);
+MENU_OUTPUTS(out, MAX_DEPTH, U8G2_OUT(u8g2, colors, fontX, fontY, offsetX, offsetY, {0, 0, U8_Width / fontX, U8_Height / fontY}), SERIAL_OUT(SerialUSB));
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
+
 
 void setup(){
   SerialUSB.begin(115200);
@@ -213,6 +263,9 @@ void setup(){
   zt4.setPeriodMatch(500, 100, 0);                                 // 1 match, channel 0
   zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
   zt4.enable(true);
+
+  u8g2.begin();
+  u8g2.setFont(fontName);
 }
 
 uint8_t modifying = 0;
@@ -221,6 +274,16 @@ uint8_t currentState = 0;
 void loop(){
   leds.show();
   nav.poll();
+
+  // nav.doInput();
+  // if (nav.changed(0))
+  // { //only draw if menu changed for gfx device
+  //   //change checking leaves more time for other tasks
+    u8g2.firstPage();
+    do
+      nav.doOutput();
+    while (u8g2.nextPage());
+  // }
 
   // Read footswitches
   for (uint8_t i = 0; i < 5; i++){
