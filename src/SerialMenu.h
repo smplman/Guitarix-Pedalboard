@@ -86,14 +86,15 @@ public:
     String selectedFile = "";
     // using menuNode::menuNode;//do not use default constructors as we wont allocate for data
     SDMenuT(typename FS::Type &sd, constText *title, const char *at, Menu::action act = doNothing, Menu::eventMask mask = noEvent)
-        : menuNode(title, 0, NULL, act, mask,wrapStyle, (systemStyles)(_menuData | _canNav)),
-        FS(sd)
+        : menuNode(title, 0, NULL, act, mask, wrapStyle, (systemStyles)(_menuData | _canNav)),
+          FS(sd)
     {}
 
     void begin() { FS::goFolder(folderName); }
 
     //this requires latest menu version to virtualize data tables
     prompt &operator[](idx_t i) const override { return *(prompt *)this; } //this will serve both as menu and as its own prompt
+
     result sysHandler(SYS_FUNC_PARAMS) override
     {
         switch (event)
@@ -159,23 +160,37 @@ public:
     {
         if (root.navFocus != this)
         { //show given title or filename if selected
-            return selectedFile == "" ? menuNode::printTo(root, sel, out, idx, len, pn) : out.printRaw(selectedFile.c_str(), len);
+            // return selectedFile == "" ? menuNode::printTo(root, sel, out, idx, len, pn) : out.printRaw(selectedFile.c_str(), len);
+            return menuNode::printTo(root, sel, out, idx, len, pn);
         }
         else if (idx == -1)
         { //when menu open (show folder name)
             ((menuNodeShadow *)shadow)->sz = FS::count() + USE_BACKDOTS;
             idx_t at = folderName.lastIndexOf("/", folderName.length() - 2) + 1;
             String fn = folderName.substring(at, folderName.length() - 1);
-            return out.printRaw(fn.c_str(), len);
+            return out.print(fn.c_str());
+            // return out.printRaw(fn.c_str(), len);
             // return out.printRaw(folderName.c_str(),len);
             // return out.printRaw(SerialMenu<FS>::dir.name(),len);
         }
         //drawing options
         idx_t i = out.tops[root.level] + idx;
+
+        // if(sel){
+
+        // } else {
+        //     out.setColor(fgColor, false);
+        // }
+
+        out.setColor(fgColor, sel);
+
         if (i < USE_BACKDOTS)
             len -= out.printRaw("[..]", len);
+            // len -= out.print("[..]");
         else
+            // out.clear(i);
             len -= out.printRaw(FS::entry(out.tops[root.level] + idx - USE_BACKDOTS).c_str(), len);
+            // len -= out.print(FS::entry(out.tops[root.level] + idx - USE_BACKDOTS).c_str());
         SerialUSB.println("");
         SerialUSB.println("");
         return len;

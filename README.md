@@ -32,4 +32,6 @@ This is a personal project to use an Arduino to build a midi controller that wor
 
 <https://github.com/alf45tar/Pedalino>
 
+<https://forum.arduino.cc/index.php?topic=442255.30>
+
 <http://asciiflow.com/>
