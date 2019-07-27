@@ -29,6 +29,9 @@ class SerialFileListing
     char* messageFromPC;
     boolean newData = false;
 
+    const unsigned long fetchTimout = 1000; // 1 second timeout
+    unsigned long lastFetchTime;
+
     long countVal = 0;
     bool fetchingCount = false;
 

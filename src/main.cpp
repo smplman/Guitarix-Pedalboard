@@ -214,12 +214,6 @@ result filePick(eventMask event, navNode &nav, prompt &item){
   if (nav.root->navFocus == (navTarget *)&filePickMenu){
     SerialUSB.println("::play::" + filePickMenu.selectedFolder + filePickMenu.selectedFile);
   }
-  switch (event)
-  {
-  case enterEvent:
-    u8g2.clearDisplay();
-    u8g2.clearBuffer();
-  }
   return proceed;
 }
 
@@ -231,6 +225,14 @@ result stopAudio(eventMask event, navNode &nav, prompt &item){
   return proceed;
 }
 
+/*
+0: effects
+1: looper
+2: tuner
+3: test
+ */
+
+uint8_t mode = 0;
 bool navEnabled = true;
 
 result displayTest(eventMask event, navNode &nav, prompt &item){
@@ -238,16 +240,55 @@ result displayTest(eventMask event, navNode &nav, prompt &item){
   {
     case enterEvent:
       navEnabled = false;
-      SerialUSB.println("display");
+      mode = 3;
+      break;
+      // nav.idleOn();
+      // SerialUSB.println("display");
       // u8g2.setFont(u8g2_font_ncenB14_tr);
 
-      u8g2.drawStr(0, 24, "Hello World!");
+      //u8g2.drawStr(0, 24, "Hello World!");
 
     case exitEvent:
+      u8g2.setFont(fontName);
       navEnabled = true;
+      break;
+      // idleOff();
   }
 
   return proceed;
+}
+
+long prevTime = 0;
+uint8_t notePos = 0;
+
+char* notes[7] = {"A","B","C","D","E","F","G"};
+
+void displayTestShow(){
+  u8g2.setFont(u8g2_font_ncenB14_tr);
+  u8g2.setFontPosCenter();
+  // Draw flat (b) and sharp (#)
+  u8g2.drawStr(22 - (u8g2.getStrWidth("b")/2), U8_Height * .25, "b");
+  u8g2.drawStr(106 - (u8g2.getStrWidth("#")/2), U8_Height * .25, "#");
+
+  u8g2.drawCircle(U8_Width/2, U8_Height, 50);
+
+  // Draw note
+  // long currentTime = millis();
+  if(millis() - prevTime > 2000){ // Change note every 2 seconds
+    prevTime = millis();
+    if(notePos < 6){
+      notePos++;
+    } else {
+      notePos = 0;
+    }
+  }
+
+  //Draw note
+  u8g2.drawStr(U8_Width / 2 - (u8g2.getStrWidth(notes[notePos]) / 2), U8_Height - 14, notes[notePos]);
+
+  // Draw refernce lines
+  // u8g2.drawLine(U8_Width/2, 0, U8_Width/2, U8_Height);
+  // u8g2.drawLine(0, U8_Height/2, U8_Width, U8_Height/2);
 }
 
 MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
@@ -275,13 +316,12 @@ MENU_OUTPUTS(out, MAX_DEPTH, U8G2_OUT(u8g2, colors, fontX, fontY, offsetX, offse
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
-
 void setup(){
   SerialUSB.begin(115200);
-  while(!SerialUSB);
+  // while(!SerialUSB);
   SerialUSB.println("Start");
 
-  Wire.begin();
+  // Wire.begin();
 
   // bank.add(knobs, Bank::CHANGE_ADDRESS);
   // bank.add(sliders, Bank::CHANGE_ADDRESS);
@@ -301,9 +341,8 @@ void setup(){
   zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
   zt4.enable(true);
 
-  //u8g2.setI2CAddress(0x78);  //if DC is pulled low
-  // u8g2.setI2CAddress(0x7A);  //if DC is pulled high
-  // u8g2.setBusClock(1500000);
+  delay(1000);
+
   u8g2.begin();
   u8g2.setFont(fontName);
 }
@@ -313,7 +352,14 @@ uint8_t currentState = 0;
 
 void loop(){
 
-  // scanI2c();
+  // Disable SFL if not connected
+  mainMenu[0].enabled = (SerialUSB ? enabledStatus : disabledStatus);
+  // if(SerialUSB){
+  //   mainMenu[0].enabled = enabledStatus;
+  // } else {
+  //   mainMenu[0].enabled = disabledStatus;
+  // }
+
   leds.show();
   // nav.poll();
 
@@ -321,11 +367,55 @@ void loop(){
   // if (nav.changed(0))
   // { //only draw if menu changed for gfx device
   //   //change checking leaves more time for other tasks
-    u8g2.firstPage();
-    do
-      if (navEnabled) nav.poll();
-    while (u8g2.nextPage());
+    // u8g2.firstPage();
+    // do
+    //   // if (navEnabled) nav.poll();
+    //   displayTestShow();
+    // while (u8g2.nextPage());
   // }
+
+  nav.doInput();
+  // SerialUSB.println(navEnabled);
+  // || !navEnabled
+  if (nav.sleepTask) {
+    // SerialUSB.println('sleep');
+    u8g2.firstPage();
+    do {
+      // u8g2.setCursor(0, 15);
+      // u8g2.print("suspended");
+      /*
+      0: effects
+      1: looper
+      2: tuner
+      3: test
+      */
+
+      switch (mode)
+      {
+      case 0:
+
+        break;
+      case 1:
+
+        break;
+      case 2:
+        // displayTuner();
+        break;
+      case 3:
+        displayTestShow();
+        break;
+
+      default:
+        break;
+      }
+    } while ( u8g2.nextPage() );
+  } else {
+    //if (nav.changed(0)) {
+      u8g2.firstPage();
+      u8g2.setFont(fontName);
+      do nav.doOutput(); while(u8g2.nextPage());
+    //}
+  }
 
   // Read footswitches
   for (uint8_t i = 0; i < 5; i++){

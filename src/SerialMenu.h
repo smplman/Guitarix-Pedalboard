@@ -88,7 +88,14 @@ public:
     SDMenuT(typename FS::Type &sd, constText *title, const char *at, Menu::action act = doNothing, Menu::eventMask mask = noEvent)
         : menuNode(title, 0, NULL, act, mask, wrapStyle, (systemStyles)(_menuData | _canNav)),
           FS(sd)
-    {}
+    {
+        // Disable node until connected to SFL host
+        if(SerialUSB){
+            menuNode::enabled = enabledStatus;
+        } else {
+            menuNode::enabled = disabledStatus;
+        }
+    }
 
     void begin() { FS::goFolder(folderName); }
 

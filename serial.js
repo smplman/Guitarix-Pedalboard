@@ -1,7 +1,7 @@
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
-const PORTNAME = 'COM16';
-// const PORTNAME = '/dev/cu.usbmodem141101';
+// const PORTNAME = 'COM16';
+const PORTNAME = '/dev/cu.usbmodem141101';
 
 const DEBUG = false;
 
@@ -40,10 +40,9 @@ port.on('open', () => {
         let file = args[3];
 
         // Only show menu data
-        //console.log(args);
-        // if(DEBUG)
-        // console.log(data);
-        if (args[0]) {
+        if(DEBUG){
+            console.log(data);
+        } else if (args[0]) {
             console.log(args[0]);
         }
 
@@ -94,7 +93,7 @@ port.on('open', () => {
         }
 
         if (command === 'entryIdx') {
-            //console.log('Entry idx ' + file + " " + basePath + path);
+            console.log('Entry idx ' + file + " " + basePath + path);
             fs.readdir(basePath + path, function (err, items) {
                 // console.log('ITEMS!!',items);
                 let res = '<entryIdx::' + items.indexOf(file) + '>\r\n';

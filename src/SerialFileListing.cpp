@@ -118,8 +118,10 @@ long SerialFileListing::count()
   SerialUSB.println(dir);
 
   fetchingCount = true;
+  lastFetchTime = 0;
+  countVal = 0;
 
-  while (fetchingCount){poll();}
+  while (fetchingCount || (millis() - lastFetchTime < fetchTimout)){poll();}
 
   // SerialUSB.print("count ");
   // SerialUSB.println(countVal);
@@ -134,8 +136,10 @@ long SerialFileListing::entryIdx(String name)
   SerialUSB.println("::" + name);
 
   fetchingEntryIdx = true;
+  lastFetchTime = 0;
+  entryIdxVal = -1;
 
-  while (fetchingEntryIdx){poll();}
+  while (fetchingEntryIdx || (millis() - lastFetchTime < fetchTimout)){poll();}
 
   // SerialUSB.println("entryIdxVal" + entryIdxVal);
 
@@ -149,8 +153,10 @@ String SerialFileListing::entry(long idx)
   SerialUSB.println(idx);
 
   fetchingEntry = true;
+  lastFetchTime = 0;
+  entryVal = "";
 
-  while (fetchingEntry){poll();}
+  while (fetchingEntry || (millis() - lastFetchTime < fetchTimout)){poll();}
 
   // SerialUSB.println("entryVal " + entryVal);
 
