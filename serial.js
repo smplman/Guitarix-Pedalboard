@@ -1,9 +1,9 @@
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
-// const PORTNAME = 'COM16';
-const PORTNAME = '/dev/cu.usbmodem141101';
+const PORTNAME = 'COM16';
+// const PORTNAME = '/dev/cu.usbmodem141101';
 
-const DEBUG = false;
+const DEBUG = true;
 
 const fs = require('fs');
 const basePath = './backing-tracks';
@@ -64,11 +64,24 @@ port.on('open', () => {
 
         if (command === 'ls') {
             //console.log('Listing ' + basePath + path);
-            fs.readdir(basePath + path, function (err, items) {
+            if(path !== 'banks'){
+                fs.readdir(basePath + path, function (err, items) {
+                    let res = '<listing::' + items.join() + '>\r\n';
+                    if (DEBUG) console.log("Sending: ", res);
+                    port.write(res);
+                });
+            } else {
+                // Show Banks list
+                let bankList = fs.readFileSync('./banks/banklist.js');
+                bankList = JSON.parse(bankList);
+                banks.forEach(bank => {
+                    let bankName = bank[0];
+                    let bankFile = bank[1];
+                    console.log(bankName, bankFile);
+                });
                 let res = '<listing::' + items.join() + '>\r\n';
-                if (DEBUG)console.log("Sending: ", res);
-                port.write(res);
-            });
+            }
+
         }
 
         if (command === 'count') {

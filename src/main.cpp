@@ -73,8 +73,8 @@
 // [D]		Rotary Encoder
 //------------------------------------------------------------------
 // Connect + to VCC and - to GND
-#define ENCODER_A_PIN (9)//(1)
-#define ENCODER_B_PIN (8)//(0)
+#define ENCODER_A_PIN (1)//(1)
+#define ENCODER_B_PIN (0)//(0)
 #define ENCODER_BTN_PIN (7)//(7)
 
 //------------------------------------------------------------------
@@ -90,9 +90,9 @@
 #define DISPLAY_SDA (PIN_WIRE_SDA) //(20)
 #define DISPLAY_SCL (PIN_WIRE_SCL) //(21)
 
-#define DISPLAY_CLOCK (13) //(23)//(11)
-#define DISPLAY_DATA (11) //(22)//(12)
-#define DISPLAY_CS (10) //(13)
+// #define DISPLAY_CLOCK (13) //(23)//(11)
+// #define DISPLAY_DATA (11) //(22)//(12)
+// #define DISPLAY_CS (10) //(13)
 // #define DISPLAY_DC (A0)
 
 /*
@@ -155,13 +155,13 @@ const uint8_t channel = 1;
 // Foot switches
 const int footSwitchPins[5] = {6, 10, 11, 12, 13};
 int footSwitchState[5] = {0, 0, 0, 0, 0};
-// DigitalCC footSwitches[] = {
-//   {6, MIDI_CC::Effects_1, channel},
-//   {10, MIDI_CC::Effects_2, channel},
-//   {11, MIDI_CC::Effects_3, channel},
-//   {12, MIDI_CC::Effects_4, channel},
-//   {13, MIDI_CC::Effects_5, channel},
-// };
+DigitalCC footSwitches[] = {
+  {6, MIDI_CC::Effects_1, channel},
+  {10, MIDI_CC::Effects_2, channel},
+  {11, MIDI_CC::Effects_3, channel},
+  {12, MIDI_CC::Effects_4, channel},
+  {13, MIDI_CC::Effects_5, channel},
+};
 
 // Rotary Potentiometer
 // AnalogCC knobs[] = {
@@ -183,8 +183,8 @@ int footSwitchState[5] = {0, 0, 0, 0, 0};
 // U8G2_SSD1309_128X64_NONAME2_1_4W_SW_SPI u8g2(U8G2_R0, DISPLAY_CLOCK, DISPLAY_DATA, DISPLAY_CS, DISPLAY_DC);
 // U8G2_SSD1309_128X64_NONAME0_F_SW_I2C u8g2(U8G2_R0, DISPLAY_SCL, DISPLAY_SDA);
 U8G2_SSD1309_128X64_NONAME0_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, DISPLAY_SCL, DISPLAY_SDA);
-#define fontName u8g2_font_5x7_tf
-// #define fontName u8g2_font_chroma48medium8_8r
+// #define fontName u8g2_font_5x7_tf
+#define fontName u8g2_font_tinytim_tf
 #define fontX 5
 #define fontY 9
 #define offsetX 0
@@ -215,6 +215,16 @@ result filePick(eventMask event, navNode &nav, prompt &item){
     SerialUSB.println("::play::" + filePickMenu.selectedFolder + filePickMenu.selectedFile);
   }
   return proceed;
+}
+
+// Bank Listing /////////////////////////////////////
+result banksPick(eventMask event, navNode &nav, prompt &item);
+SerialMenu banksPickMenu("Banks", "/banks", banksPick, enterEvent);
+
+// implementing the handler here after filePick is defined...
+result banksPick(eventMask event, navNode &nav, prompt &item)
+{
+
 }
 
 result stopAudio(eventMask event, navNode &nav, prompt &item){
@@ -293,10 +303,11 @@ void displayTestShow(){
 
 MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu::wrapStyle,
   SUBMENU(filePickMenu),
+  SUBMENU(banksPickMenu),
   OP("Stop Backing Track", stopAudio, anyEvent),
   OP("Looper", Menu::doNothing, anyEvent),
   OP("Tuner", Menu::doNothing, anyEvent),
-  OP("Display Test", displayTest, anyEvent),
+  // OP("Display Test", displayTest, anyEvent),
   EXIT("<Back\r\n")
 );
 
@@ -354,30 +365,14 @@ void loop(){
 
   // Disable SFL if not connected
   mainMenu[0].enabled = (SerialUSB ? enabledStatus : disabledStatus);
-  // if(SerialUSB){
-  //   mainMenu[0].enabled = enabledStatus;
-  // } else {
-  //   mainMenu[0].enabled = disabledStatus;
-  // }
+  mainMenu[1].enabled = (SerialUSB ? enabledStatus : disabledStatus);
 
   leds.show();
   // nav.poll();
-
-  // nav.doInput();
-  // if (nav.changed(0))
-  // { //only draw if menu changed for gfx device
-  //   //change checking leaves more time for other tasks
-    // u8g2.firstPage();
-    // do
-    //   // if (navEnabled) nav.poll();
-    //   displayTestShow();
-    // while (u8g2.nextPage());
-  // }
-
   nav.doInput();
-  // SerialUSB.println(navEnabled);
-  // || !navEnabled
-  if (nav.sleepTask) {
+
+  if (nav.sleepTask || !navEnabled)
+  {
     // SerialUSB.println('sleep');
     u8g2.firstPage();
     do {
@@ -413,6 +408,7 @@ void loop(){
     //if (nav.changed(0)) {
       u8g2.firstPage();
       u8g2.setFont(fontName);
+      u8g2.setFontPosBottom();
       do nav.doOutput(); while(u8g2.nextPage());
     //}
   }
@@ -436,7 +432,7 @@ void loop(){
     // Set MIDI Channel if an effect is turned on by foot switch
     if (footSwitchState[i] == HIGH && currentState == LOW)
     {
-      SerialUSB.println(i);
+      // SerialUSB.println(i);
       bank.setBankSetting(i);
       modifying = i;
     }
