@@ -6,12 +6,12 @@ const Readline = require('@serialport/parser-readline');
 // const PORTNAME = '/dev/cu.usbmodem141101';
 const PORTNAME = config.serialPort;
 
-const DEBUG = false;
+const DEBUG = true;
 
 const fs = require('fs');
 const basePath = '.';
 
-let rawdata = fs.readFileSync(config.banksPath + 'banklist.js');
+let rawdata = fs.readFileSync(config.banksPath + '/banklist.js');
 let banks = JSON.parse(rawdata);
 let presetArray = {};
 buildPresetArray();
