@@ -1,9 +1,20 @@
+/**
+  Name: SerialFileListing.cpp
+  Purpose: Library to list files over serial
+  IO: Serial
+  @author Stephen Peery
+  @version 0.5 7/14/19
+  @email smp4488_AT_gmail.com
+  @github https://github.com/smp4488/Guitarix-Pedalboard
+  @credit Robin2 https://forum.arduino.cc/index.php?topic=396450.0
+/*/
+
 #include "SerialFileListing.h"
 
 SerialFileListing::SerialFileListing()
 {
  // SerialUSB.println("SerialFileListing");
-  byte numChars = 64;
+  byte numChars = 128;
   charSize = numChars;
   receivedChars = new char[charSize];
   tempChars = new char[charSize];
@@ -81,11 +92,12 @@ void SerialFileListing::parseData()
 {
     static long ndx = 0;
     char* cmd = strtok(tempChars,"::");
-    Serial.println(cmd);
     char* s = strtok(NULL,":");
+
+    // SerialUSB.println(cmd);
     // SerialUSB.println(s);
 
-    if (String(cmd) == "ls")
+    if(strcmp(cmd, "ls") == 0)
     {
       while(s) {
         s = strtok(NULL, ",");
@@ -93,21 +105,21 @@ void SerialFileListing::parseData()
       }
     }
 
-    if (String(cmd) == "count")
+    if(strcmp(cmd, "count") == 0)
     {
       countVal = atof(s);
       fetchingCount = false;
     }
 
-    if (String(cmd) == "entryIdx")
+    if(strcmp(cmd, "entryIdx") == 0)
     {
       entryIdxVal = atol(s);
       fetchingEntryIdx = false;
     }
 
-    if (String(cmd) == "entry")
+    if (strcmp(cmd, "entry") == 0)
     {
-      entryVal = String(s);
+      entryVal = s;
       fetchingEntry = false;
     }
 }
@@ -118,10 +130,10 @@ long SerialFileListing::count()
   SerialUSB.println(dir);
 
   fetchingCount = true;
-  lastFetchTime = 0;
+  lastFetchTime = millis();
   countVal = 0;
 
-  while (fetchingCount || (millis() - lastFetchTime < fetchTimout)){poll();}
+  while (fetchingCount && (millis() - lastFetchTime <= fetchTimout)){poll();}
 
   // SerialUSB.print("count ");
   // SerialUSB.println(countVal);
@@ -136,10 +148,10 @@ long SerialFileListing::entryIdx(String name)
   SerialUSB.println("::" + name);
 
   fetchingEntryIdx = true;
-  lastFetchTime = 0;
+  lastFetchTime = millis();
   entryIdxVal = -1;
 
-  while (fetchingEntryIdx || (millis() - lastFetchTime < fetchTimout)){poll();}
+  while (fetchingEntryIdx && (millis() - lastFetchTime <= fetchTimout)){poll();}
 
   // SerialUSB.println("entryIdxVal" + entryIdxVal);
 
@@ -153,10 +165,10 @@ String SerialFileListing::entry(long idx)
   SerialUSB.println(idx);
 
   fetchingEntry = true;
-  lastFetchTime = 0;
+  lastFetchTime = millis();
   entryVal = "";
 
-  while (fetchingEntry || (millis() - lastFetchTime < fetchTimout)){poll();}
+  while (fetchingEntry && (millis() - lastFetchTime <= fetchTimout)){poll();}
 
   // SerialUSB.println("entryVal " + entryVal);
 

@@ -1,11 +1,17 @@
+/**
+  Name: SerialMenu.h
+  Purpose: a full automated Serial file select plugin for arduino menu library
+  IO: Serial
+  * requires a dynamic menu (MENU_USERAM)
+  @author Stephen Peery
+  @version 0.5 7/14/19
+  @email smp4488_AT_gmail.com
+  @github https://github.com/smp4488/Guitarix-Pedalboard
+*/
 
 /* -*- C++ -*- */
 #pragma once
-// a full automated Serial file select
-// plugin for arduino menu library
-// requires a dynamic menu (MENU_USERAM)
-// IO: Serial
-// July 2019 - Stephen Peery [smp4488@gmail.com]
+
 #include <menu.h>
 #include "SerialFileListing.h"
 
@@ -33,10 +39,15 @@ public:
         size = 0;
         long ct = sdc.count();
         for (int i=0; i<ct; i++) {
-            if (start<=size&&size<start+maxSz) cache[size-start]=String(sdc.entry(i));
+            if (start<=size&&size<start+maxSz) cache[size-start]=sdc.entry(i);
 
             size++;
         }
+    }
+
+    bool setFolder(String folderName)
+    {
+        return sdc.goFolder(folderName);
     }
 
     //open a folder
@@ -71,7 +82,7 @@ public:
         if(0>idx || idx >= size) return "";
         if(cacheStart <= idx && idx < (cacheStart+maxSz)) return cache[idx-cacheStart];
         refresh(idx - (maxSz >> 1));
-        return entry(idx);
+        return sdc.entry(idx);
     }
 };
 
@@ -84,11 +95,15 @@ public:
     String folderName = "/"; //set this to other folder when needed
     String selectedFolder = "/";
     String selectedFile = "";
+    String rootFolder = "";
     // using menuNode::menuNode;//do not use default constructors as we wont allocate for data
     SDMenuT(typename FS::Type &sd, constText *title, const char *at, Menu::action act = doNothing, Menu::eventMask mask = noEvent)
         : menuNode(title, 0, NULL, act, mask, wrapStyle, (systemStyles)(_menuData | _canNav)),
           FS(sd)
     {
+        folderName = at;
+        rootFolder = at;
+        // sd.goFolder(at);
         // Disable node until connected to SFL host
         if(SerialUSB){
             menuNode::enabled = enabledStatus;
@@ -97,7 +112,10 @@ public:
         }
     }
 
-    void begin() { FS::goFolder(folderName); }
+    void begin() {
+        SerialUSB.println(folderName);
+        FS::goFolder(folderName);
+    }
 
     //this requires latest menu version to virtualize data tables
     prompt &operator[](idx_t i) const override { return *(prompt *)this; } //this will serve both as menu and as its own prompt
@@ -108,9 +126,11 @@ public:
         {
         case enterEvent:
             if (nav.root->navFocus != nav.target)
-            {                                                                                                        //on sd card entry
+            {
+                //on folder entry
+                SDMenuT<FS>::setFolder(folderName);
                 nav.sel = ((SDMenuT<FS> *)(&item))->entryIdx(((SDMenuT<FS> *)(&item))->selectedFile) + USE_BACKDOTS; //restore context
-                // SerialUSB.println(nav.sel);
+                dirty = true;
             }
         }
         return proceed;
@@ -146,16 +166,19 @@ public:
                 return;
             }
         case escCmd:
-            if (folderName == "/")            //at root?
+            //at root or the entry folder?
+            if (folderName == "/" || folderName == rootFolder){
+                // SerialUSB.println("escCmd at root");
                 menuNode::doNav(nav, escCmd); //then exit
-            else
-            { //previous folder
+            }
+            else { //previous folder
+                // SerialUSB.println("escCmd previous folder");
                 idx_t at = folderName.lastIndexOf("/", folderName.length() - 2) + 1;
                 String fn = folderName.substring(at, folderName.length() - 1);
                 folderName.remove(folderName.lastIndexOf("/", folderName.length() - 2) + 1);
-                FS::goFolder(folderName);
+                SDMenuT<FS>::goFolder(folderName);
+                nav.sel = SDMenuT<FS>::entryIdx(fn) + USE_BACKDOTS;
                 dirty = true; //redraw menu
-                nav.sel = FS::entryIdx(fn) + USE_BACKDOTS;
             }
             return;
         }
@@ -167,37 +190,23 @@ public:
     {
         if (root.navFocus != this)
         { //show given title or filename if selected
-            // return selectedFile == "" ? menuNode::printTo(root, sel, out, idx, len, pn) : out.printRaw(selectedFile.c_str(), len);
-            return menuNode::printTo(root, sel, out, idx, len, pn);
+            return selectedFile == "" ? menuNode::printTo(root, sel, out, idx, len, pn) : out.printRaw(selectedFile.c_str(), len);
         }
         else if (idx == -1)
         { //when menu open (show folder name)
-            ((menuNodeShadow *)shadow)->sz = FS::count() + USE_BACKDOTS;
+            ((menuNodeShadow *)shadow)->sz = SDMenuT<FS>::count() + USE_BACKDOTS;
             idx_t at = folderName.lastIndexOf("/", folderName.length() - 2) + 1;
             String fn = folderName.substring(at, folderName.length() - 1);
-            return out.print(fn.c_str());
-            // return out.printRaw(fn.c_str(), len);
-            // return out.printRaw(folderName.c_str(),len);
-            // return out.printRaw(SerialMenu<FS>::dir.name(),len);
+            return out.printRaw(fn.c_str(), len);
         }
         //drawing options
         idx_t i = out.tops[root.level] + idx;
-
-        // if(sel){
-
-        // } else {
-        //     out.setColor(fgColor, false);
-        // }
-
         out.setColor(fgColor, sel);
 
         if (i < USE_BACKDOTS)
             len -= out.printRaw("[..]", len);
-            // len -= out.print("[..]");
         else
-            // out.clear(i);
             len -= out.printRaw(FS::entry(out.tops[root.level] + idx - USE_BACKDOTS).c_str(), len);
-            // len -= out.print(FS::entry(out.tops[root.level] + idx - USE_BACKDOTS).c_str());
         SerialUSB.println("");
         SerialUSB.println("");
         return len;

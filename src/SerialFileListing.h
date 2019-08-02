@@ -1,3 +1,14 @@
+/**
+  Name: SerialFileListing.h
+  Purpose: Library to list files over serial
+  IO: Serial
+  @author Stephen Peery
+  @version 0.5 7/14/19
+  @email smp4488_AT_gmail.com
+  @github https://github.com/smp4488/Guitarix-Pedalboard
+  @credit Robin2 https://forum.arduino.cc/index.php?topic=396450.0
+/*/
+
 #ifndef SerialFileListing_h
 #define SerialFileListing_h
 

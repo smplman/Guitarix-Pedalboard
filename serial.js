@@ -1,12 +1,17 @@
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
-const PORTNAME = 'COM16';
-// const PORTNAME = '/dev/cu.usbmodem141101';
+// const PORTNAME = 'COM16';
+const PORTNAME = '/dev/cu.usbmodem141101';
 
-const DEBUG = true;
+const DEBUG = false;
 
 const fs = require('fs');
-const basePath = './backing-tracks';
+const basePath = '.';
+
+let rawdata = fs.readFileSync('./banks/banklist.js');
+let banks = JSON.parse(rawdata);
+let presetArray = {};
+buildPresetArray();
 
 const player = require('play-sound')(opts = {});
 let audio;
@@ -23,6 +28,9 @@ const port = new SerialPort(PORTNAME, {
 
 const parser = port.pipe(new Readline({ delimiter: '\r\n' }));
 
+let isBank = false;
+let pathArgs = [];
+
 // Read the port data
 port.on('open', () => {
     console.log('Connected to pedalboard');
@@ -38,6 +46,13 @@ port.on('open', () => {
         let command = args[1];
         let path = args[2];
         let file = args[3];
+
+        // Explode path and check for banks
+        if(path) {
+            pathArgs = path.split('/');
+            isBank = pathArgs[1] === 'banks' ? true : false;
+        }
+
 
         // Only show menu data
         if(DEBUG){
@@ -63,56 +78,63 @@ port.on('open', () => {
         }
 
         if (command === 'ls') {
-            //console.log('Listing ' + basePath + path);
-            if(path !== 'banks'){
-                fs.readdir(basePath + path, function (err, items) {
-                    let res = '<listing::' + items.join() + '>\r\n';
-                    if (DEBUG) console.log("Sending: ", res);
-                    port.write(res);
-                });
-            } else {
-                // Show Banks list
-                let bankList = fs.readFileSync('./banks/banklist.js');
-                bankList = JSON.parse(bankList);
-                banks.forEach(bank => {
-                    let bankName = bank[0];
-                    let bankFile = bank[1];
-                    console.log(bankName, bankFile);
-                });
+            if (DEBUG)console.log('Listing ' + basePath + path);
+            fs.readdir(basePath + path, function (err, items) {
                 let res = '<listing::' + items.join() + '>\r\n';
-            }
-
+                if (DEBUG) console.log("Sending: ", res);
+                port.write(res);
+            });
         }
 
         if (command === 'count') {
-            //console.log('Count ' + basePath + path);
-            fs.readdir(basePath + path, function (err, items) {
-                let res = '<count::' + items.length + '>\r\n';
-                if (DEBUG)console.log("Sending: ", res);
-                port.write(res);
-            });
+            if (DEBUG)console.log('Count ' + basePath + path);
+            let count = -1;
+
+            if (isBank) {
+                count = getBankCount(path);
+            } else {
+                let items = fs.readdirSync(basePath + path);
+                count = items.length;
+            }
+
+            let res = '<count::' + count + '>\r\n';
+            if (DEBUG) console.log("Sending: ", res);
+            port.write(res);
         }
 
         if (command === 'entry') {
-            //console.log('Entry ' + file + " " + basePath + path);
-            fs.readdir(basePath + path, { withFileTypes: true }, function (err, items) {
-                // console.log('ITEMS!!', items);
+            if (DEBUG)console.log('Entry ' + file + " " + basePath + path);
+
+            let entry = "";
+
+            if(isBank) {
+                entry = getBankEntry(file);
+            } else {
+                let items = fs.readdirSync(basePath + path, { withFileTypes: true });
                 let item = items[file];
-                // let res = '<entry:' + items[file] + '>\r\n';
-                let res = '<entry::' + item.name + (item.isDirectory() ? '/' : '') + '>\r\n';
-                if (DEBUG)console.log("Sending: ", res);
-                port.write(res);
-            });
+                entry = item.name + (item.isDirectory() ? '/' : '')
+            }
+
+            let res = '<entry::' + entry + '>\r\n';
+            if (DEBUG) console.log("Sending: ", res);
+            port.write(res);
         }
 
         if (command === 'entryIdx') {
-            console.log('Entry idx ' + file + " " + basePath + path);
-            fs.readdir(basePath + path, function (err, items) {
-                // console.log('ITEMS!!',items);
-                let res = '<entryIdx::' + items.indexOf(file) + '>\r\n';
-                if (DEBUG)console.log("Sending: ", res);
-                port.write(res);
-            });
+            if(DEBUG)console.log('Entry idx ' + file + " " + basePath + path);
+
+            let entryIdx = -1;
+
+            if(isBank) {
+                entryIdx = getBankIdx(file);
+            } else {
+                let items = fs.readdirSync(basePath + path);
+                entryIdx = items.indexOf(file);
+            }
+
+            let res = '<entryIdx::' + entryIdx + '>\r\n';
+            if (DEBUG) console.log("Sending: ", res);
+            port.write(res);
         }
     });
 
@@ -120,3 +142,113 @@ port.on('open', () => {
         port.write(input);
     });
 });
+
+// Count
+// path
+// ::count::/banks
+// ::count::/jazz/
+// ::count::/banks/VoxBeatleMysteryPreset/
+function getBankCount(path) {
+    // If it's base path use banklist.js otherwise use actual bank file
+    let bankCount = -1;
+
+    if (typeof pathArgs[2] === 'undefined' || pathArgs[2] === '') {
+        bankCount = banks.length;
+    } else {
+        // getPresetArray(pathArgs[2], preset => {
+        //     bankCount = preset.length
+        // });
+        bankCount = presetArray[pathArgs[2]].length;
+    }
+
+    if (DEBUG)console.log('Bank Count:', bankCount);
+    return bankCount;
+}
+
+// Entry
+// path / index
+// ::entry::/banks::0
+// ::entry::/banks/VoxBeatleMysteryPreset/::0
+function getBankEntry(index) {
+    let bankEntry = -1;
+
+    if (typeof pathArgs[2] === 'undefined' || pathArgs[2] === '') {
+        bankEntry = banks[index][0] + '/';
+    } else {
+        // getPresetArray(pathArgs[2], preset => {
+        //     bankEntry = preset[index];
+        // });
+        bankEntry = presetArray[pathArgs[2]][index];
+    }
+
+    if(DEBUG)console.log('Bank Entry:', bankEntry);
+    return bankEntry;
+}
+
+// entryIdx
+// path / entry
+// ::entryIdx::/banks::VoxBeatleMysteryPreset
+function getBankIdx(entry) {
+    let entryIdx = -1;
+
+    if (typeof pathArgs[2] === 'undefined' || pathArgs[2] === '') {
+        banks.forEach((bank, i) => {
+            if (bank[0] === entry) {
+                entryIdx = i;
+            }
+        });
+    } else {
+        // getPresetArray(pathArgs[2], preset => {
+        //     preset.forEach((bank, i) => {
+        //         if (bank === entry) {
+        //             entryIdx = i;
+        //         }
+        //     });
+        // });
+        presetArray[pathArgs[2]].forEach((bank, i) => {
+            if (bank === entry) {
+                entryIdx = i;
+            }
+        });
+    }
+
+    if (DEBUG)console.log('Bank Entry Index:', entryIdx);
+    return entryIdx;
+}
+
+function getPresetArray(presetName, cb) {
+    banks.forEach(bank => {
+        let bankName = bank[0];
+        let bankFile = bank[1];
+        if (presetName === bankName) {
+            let singleBank = fs.readFileSync('./banks/' + bankFile);
+            singleBank = JSON.parse(singleBank);
+            // remove items 0 and 1
+            singleBank.splice(0, 2);
+            // Filter out every other item because of how the bank is structured
+            singleBank = singleBank.filter((element, index) => {
+                return index % 2 === 0;
+            });
+
+            cb(singleBank);
+        }
+    });
+}
+
+function buildPresetArray(){
+    banks.forEach(bank => {
+        let bankName = bank[0];
+        let bankFile = bank[1];
+
+        let singleBank = fs.readFileSync('./banks/' + bankFile);
+        singleBank = JSON.parse(singleBank);
+        // remove items 0 and 1
+        singleBank.splice(0, 2);
+        // Filter out every other item because of how the bank is structured
+        singleBank = singleBank.filter((element, index) => {
+            return index % 2 === 0;
+        });
+
+        presetArray[bankName] = singleBank;
+    });
+}
