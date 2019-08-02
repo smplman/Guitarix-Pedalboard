@@ -1,14 +1,17 @@
+const config = require('./config.json');
+
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
 // const PORTNAME = 'COM16';
-const PORTNAME = '/dev/cu.usbmodem141101';
+// const PORTNAME = '/dev/cu.usbmodem141101';
+const PORTNAME = config.serialPort;
 
 const DEBUG = false;
 
 const fs = require('fs');
 const basePath = '.';
 
-let rawdata = fs.readFileSync('./banks/banklist.js');
+let rawdata = fs.readFileSync(config.banksPath + 'banklist.js');
 let banks = JSON.parse(rawdata);
 let presetArray = {};
 buildPresetArray();
@@ -62,10 +65,10 @@ port.on('open', () => {
         }
 
         if (command === 'play') {
-            if (DEBUG)console.log('Play ' + basePath + path);
+            if (DEBUG)console.log('Play ' + config.backingTracksPath + path);
             // If already playing stop
             if (audio) audio.kill();
-            audio = player.play(basePath + path, { mplayer: ['-loop', 0] }, function (err) {
+            audio = player.play(config.backingTracksPath + path, { mplayer: ['-loop', 0] }, function (err) {
                 if (err) console.log(err)//throw err
             })
         }
@@ -78,8 +81,8 @@ port.on('open', () => {
         }
 
         if (command === 'ls') {
-            if (DEBUG)console.log('Listing ' + basePath + path);
-            fs.readdir(basePath + path, function (err, items) {
+            if (DEBUG) console.log('Listing ' + path);
+            fs.readdir(config.backingTracksPath + path, function (err, items) {
                 let res = '<listing::' + items.join() + '>\r\n';
                 if (DEBUG) console.log("Sending: ", res);
                 port.write(res);
@@ -87,13 +90,13 @@ port.on('open', () => {
         }
 
         if (command === 'count') {
-            if (DEBUG)console.log('Count ' + basePath + path);
+            if (DEBUG) console.log('Count ' + path);
             let count = -1;
 
             if (isBank) {
                 count = getBankCount(path);
             } else {
-                let items = fs.readdirSync(basePath + path);
+                let items = fs.readdirSync(config.backingTracksPath + path);
                 count = items.length;
             }
 
@@ -103,14 +106,14 @@ port.on('open', () => {
         }
 
         if (command === 'entry') {
-            if (DEBUG)console.log('Entry ' + file + " " + basePath + path);
+            if (DEBUG)console.log('Entry ' + file + " " + path);
 
             let entry = "";
 
             if(isBank) {
                 entry = getBankEntry(file);
             } else {
-                let items = fs.readdirSync(basePath + path, { withFileTypes: true });
+                let items = fs.readdirSync(config.backingTracksPath + path, { withFileTypes: true });
                 let item = items[file];
                 entry = item.name + (item.isDirectory() ? '/' : '')
             }
@@ -121,14 +124,14 @@ port.on('open', () => {
         }
 
         if (command === 'entryIdx') {
-            if(DEBUG)console.log('Entry idx ' + file + " " + basePath + path);
+            if(DEBUG)console.log('Entry idx ' + file + " " + path);
 
             let entryIdx = -1;
 
             if(isBank) {
                 entryIdx = getBankIdx(file);
             } else {
-                let items = fs.readdirSync(basePath + path);
+                let items = fs.readdirSync(config.backingTracksPath + path);
                 entryIdx = items.indexOf(file);
             }
 

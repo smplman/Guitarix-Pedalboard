@@ -329,26 +329,26 @@ MENU(mainMenu, "Guitarix Pedalboard Menu", Menu::doNothing, Menu::noEvent, Menu:
 );
 
 // Encoder /////////////////////////////////////
-// ClickEncoder clickEncoder(ENCODER_A_PIN, ENCODER_B_PIN, ENCODER_BTN_PIN, 4);
-// ClickEncoderStream encStream(clickEncoder, 1);
-// void timerIsr() { clickEncoder.service(); }
-// void TC4_Handler() { Adafruit_ZeroTimer::timerHandler(4); }
+ClickEncoder clickEncoder(ENCODER_A_PIN, ENCODER_B_PIN, ENCODER_BTN_PIN, 4);
+ClickEncoderStream encStream(clickEncoder, 1);
+void timerIsr() { clickEncoder.service(); }
+void TC4_Handler() { Adafruit_ZeroTimer::timerHandler(4); }
 
 serialIn serial(SerialUSB);
-// MENU_INPUTS(in, &serial, &encStream);
-MENU_INPUTS(in, &serial);
-// MENU_OUTPUTS(out, MAX_DEPTH, U8G2_OUT(u8g2, colors, fontX, fontY, offsetX, offsetY, {0, 0, U8_Width / fontX, U8_Height / fontY}), SERIAL_OUT(SerialUSB));
-MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(SerialUSB), NONE);
+MENU_INPUTS(in, &serial, &encStream);
+// MENU_INPUTS(in, &serial);
+MENU_OUTPUTS(out, MAX_DEPTH, U8G2_OUT(u8g2, colors, fontX, fontY, offsetX, offsetY, {0, 0, U8_Width / fontX, U8_Height / fontY}), SERIAL_OUT(SerialUSB));
+// MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(SerialUSB), NONE);
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
-idx_t web_tops[MAX_DEPTH] = {0};
+// idx_t web_tops[MAX_DEPTH] = {0};
 // PANELS(webPanels, {0, 0, 80, 100});
-jsonFmt<serialOut> jsonOut(SerialUSB, web_tops);
+// jsonFmt<serialOut> jsonOut(SerialUSB, web_tops);
 
 void setup(){
   SerialUSB.begin(115200);
-  while(!SerialUSB);
+  // while(!SerialUSB);
   SerialUSB.println("Start");
 
   // Wire.begin();
@@ -363,19 +363,19 @@ void setup(){
   leds.setBrightness(30);
   // leds.setPixelColor(0, 0, 255, 0);
 
-  // /********************* Timer #4, 8 bit, one callback with adjustable period */
-  // zt4.configure(TC_CLOCK_PRESCALER_DIV64,     // prescaler
-  //               TC_COUNTER_SIZE_32BIT,        // bit width of timer/counter
-  //               TC_WAVE_GENERATION_MATCH_PWM // match style
-  // );
-  // zt4.setPeriodMatch(500, 100, 0);                                 // 1 match, channel 0
-  // zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
-  // zt4.enable(true);
+  /********************* Timer #4, 8 bit, one callback with adjustable period */
+  zt4.configure(TC_CLOCK_PRESCALER_DIV64,     // prescaler
+                TC_COUNTER_SIZE_32BIT,        // bit width of timer/counter
+                TC_WAVE_GENERATION_MATCH_PWM // match style
+  );
+  zt4.setPeriodMatch(500, 100, 0);                                 // 1 match, channel 0
+  zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
+  zt4.enable(true);
 
-  // delay(1000);
+  delay(1000);
 
-  // u8g2.begin();
-  // u8g2.setFont(fontName);
+  u8g2.begin();
+  u8g2.setFont(fontName);
 }
 
 uint8_t modifying = 0;
@@ -388,50 +388,50 @@ void loop(){
   mainMenu[1].enabled = (SerialUSB ? enabledStatus : disabledStatus);
 
   leds.show();
-  nav.poll();
-  // nav.doInput();
+  // nav.poll();
+  nav.doInput();
 
-  // if (nav.sleepTask || !navEnabled)
-  // {
-  //   // SerialUSB.println('sleep');
-  //   u8g2.firstPage();
-  //   do {
-  //     // u8g2.setCursor(0, 15);
-  //     // u8g2.print("suspended");
-  //     /*
-  //     0: effects
-  //     1: looper
-  //     2: tuner
-  //     3: test
-  //     */
+  if (nav.sleepTask || !navEnabled)
+  {
+    // SerialUSB.println('sleep');
+    u8g2.firstPage();
+    do {
+      // u8g2.setCursor(0, 15);
+      // u8g2.print("suspended");
+      /*
+      0: effects
+      1: looper
+      2: tuner
+      3: test
+      */
 
-  //     switch (mode)
-  //     {
-  //     case 0:
+      switch (mode)
+      {
+      case 0:
 
-  //       break;
-  //     case 1:
+        break;
+      case 1:
 
-  //       break;
-  //     case 2:
-  //       // displayTuner();
-  //       break;
-  //     case 3:
-  //       displayTestShow();
-  //       break;
+        break;
+      case 2:
+        // displayTuner();
+        break;
+      case 3:
+        displayTestShow();
+        break;
 
-  //     default:
-  //       break;
-  //     }
-  //   } while ( u8g2.nextPage() );
-  // } else {
-  //   //if (nav.changed(0)) {
-  //     u8g2.firstPage();
-  //     u8g2.setFont(fontName);
-  //     u8g2.setFontPosBottom();
-  //     do nav.doOutput(); while(u8g2.nextPage());
-  //   //}
-  // }
+      default:
+        break;
+      }
+    } while ( u8g2.nextPage() );
+  } else {
+    //if (nav.changed(0)) {
+      u8g2.firstPage();
+      u8g2.setFont(fontName);
+      u8g2.setFontPosBottom();
+      do nav.doOutput(); while(u8g2.nextPage());
+    //}
+  }
 
   // Read footswitches
   for (uint8_t i = 0; i < 5; i++){
