@@ -68,7 +68,7 @@ port.on('open', () => {
             if (DEBUG)console.log('Play ' + config.backingTracksPath + path);
             // If already playing stop
             if (audio) audio.kill();
-            audio = player.play(config.backingTracksPath + path, { mplayer: ['-loop', 0] }, function (err) {
+            audio = player.play(config.backingTracksPath + path, { mplayer: ['-loop', 0 , '-ao', 'jack'] }, function (err) {
                 if (err) console.log(err)//throw err
             })
         }
