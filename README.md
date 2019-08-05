@@ -2,7 +2,7 @@
 
 This is a personal project to use an Arduino to build a midi controller that works with Guitarix that is running on a RaspberryPi.
 
-# Libraries
+## Libraries
 
 *<https://github.com/tttapa/MIDI_controller>
 
@@ -20,7 +20,7 @@ This is a personal project to use an Arduino to build a midi controller that wor
 
 *<https://github.com/adafruit/Adafruit_ZeroDMA>
 
-# Inspiration / helpful links
+## Inspiration / helpful links
 
 *<https://medium.com/@atippy83/guitarix-the-pi-dle-board-8d6298ca8e42>
 
