@@ -96,6 +96,7 @@ public:
     String selectedFolder = "/";
     String selectedFile = "";
     String rootFolder = "";
+    uint8_t parentIdx = 0;
     // using menuNode::menuNode;//do not use default constructors as we wont allocate for data
     SDMenuT(typename FS::Type &sd, constText *title, const char *at, Menu::action act = doNothing, Menu::eventMask mask = noEvent)
         : menuNode(title, 0, NULL, act, mask, wrapStyle, (systemStyles)(_menuData | _canNav)),
@@ -150,6 +151,7 @@ public:
                     // SerialUSB.print("\nOpen folder...");
                     //open folder (reusing the menu)
                     folderName += selFile;
+                    parentIdx = nav.sel - USE_BACKDOTS;
                     SDMenuT<FS>::goFolder(folderName);
                     dirty = true; //redraw menu
                     nav.sel = 0;

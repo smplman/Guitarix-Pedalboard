@@ -223,15 +223,8 @@ SerialMenu banksPickMenu("Banks", "/banks/", banksPick, enterEvent);
 // implementing the handler here after banksPick is defined...
 result banksPick(eventMask event, navNode &nav, prompt &item)
 {
-  // switch (event)
-  // {
-  //   case enterEvent:
-  //     // Send midi program change
-  //     MIDI_Controller.MIDI()->send(PROGRAM_CHANGE, channel, 0x00);
-  // }
   if (nav.root->navFocus == (navTarget *)&banksPickMenu){
-    // Menu::idx_t bankIdx = nav.root->navFocus->selected();
-    uint8_t bankIdx = 0;
+    uint8_t bankIdx = banksPickMenu.parentIdx;
     uint8_t programIdx = nav.sel - 1; // Zero Indexed
 
     MIDI_Controller.MIDI()->send(CONTROL_CHANGE, channel, 0X00, 0X00); // Bank select MSB
