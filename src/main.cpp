@@ -154,13 +154,13 @@ const uint8_t channel = 1;
 // Foot switches
 const int footSwitchPins[5] = {6, 10, 11, 12, 13};
 int footSwitchState[5] = {0, 0, 0, 0, 0};
-DigitalCC footSwitches[] = {
-  {6, MIDI_CC::Effects_1, channel},
-  {10, MIDI_CC::Effects_2, channel},
-  {11, MIDI_CC::Effects_3, channel},
-  {12, MIDI_CC::Effects_4, channel},
-  {13, MIDI_CC::Effects_5, channel},
-};
+// DigitalCC footSwitches[] = {
+//   {6, MIDI_CC::Effects_1, channel},
+//   {10, MIDI_CC::Effects_2, channel},
+//   {11, MIDI_CC::Effects_3, channel},
+//   {12, MIDI_CC::Effects_4, channel},
+//   {13, MIDI_CC::Effects_5, channel},
+// };
 
 // Rotary Potentiometer
 // AnalogCC knobs[] = {
