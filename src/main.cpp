@@ -90,32 +90,6 @@
 #define DISPLAY_SDA (PIN_WIRE_SDA) //(20)
 #define DISPLAY_SCL (PIN_WIRE_SCL) //(21)
 
-// #define DISPLAY_CLOCK (13) //(23)//(11)
-// #define DISPLAY_DATA (11) //(22)//(12)
-// #define DISPLAY_CS (10) //(13)
-// #define DISPLAY_DC (A0)
-
-/*
-SSD1309 128X64_NONAME2 https://github.com/olikraus/u8g2/wiki/u8g2setupcpp#ssd1309-128x64_noname2
-
-SPI full framebuffer, size = 1024 bytes
-U8G2_SSD1309_128X64_NONAME2_F_4W_SW_SPI(rotation, clock, data, cs, dc[, reset])
-
-I2C full framebuffer, size = 1024 bytes
-U8G2_SSD1309_128X64_NONAME2_F_SW_I2C(rotation, clock, data [, reset])
- */
-
-/*
-SSD1309 128X64_NONAME0 https://github.com/olikraus/u8g2/wiki/u8g2setupcpp#ssd1309-128x64_noname0
-
-SPI full framebuffer, size = 1024 bytes
-U8G2_SSD1309_128X64_NONAME0_F_4W_SW_SPI(rotation, clock, data, cs, dc [, reset])
-
-I2C full framebuffer, size = 1024 bytes
-U8G2_SSD1309_128X64_NONAME0_F_SW_I2C(rotation, clock, data [, reset])
-
-*/
-
 #include <Arduino.h>
 #include <MIDI_Controller.h>
 #include <menu.h>
@@ -179,8 +153,6 @@ int footSwitchState[5] = {0, 0, 0, 0, 0};
 // };
 
 // SSD1309 OLED Display
-// U8G2_SSD1309_128X64_NONAME2_1_4W_SW_SPI u8g2(U8G2_R0, DISPLAY_CLOCK, DISPLAY_DATA, DISPLAY_CS, DISPLAY_DC);
-// U8G2_SSD1309_128X64_NONAME0_F_SW_I2C u8g2(U8G2_R0, DISPLAY_SCL, DISPLAY_SDA);
 U8G2_SSD1309_128X64_NONAME0_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, DISPLAY_SCL, DISPLAY_SDA);
 // #define fontName u8g2_font_5x7_tf
 #define fontName u8g2_font_tinytim_tf
@@ -228,9 +200,7 @@ result banksPick(eventMask event, navNode &nav, prompt &item)
     uint8_t programIdx = nav.sel - 1; // Zero Indexed
 
     MIDI_Controller.MIDI()->send(CONTROL_CHANGE, channel, 0X00, 0X00); // Bank select MSB
-    // Select Bank
     MIDI_Controller.MIDI()->send(CONTROL_CHANGE, channel, 0X20, bankIdx); // Bank select LSB
-    // Select Program
     MIDI_Controller.MIDI()->send(PROGRAM_CHANGE, channel, programIdx); // Program/Preset change
   }
 
@@ -280,7 +250,6 @@ result displayTest(eventMask event, navNode &nav, prompt &item){
 
 long prevTime = 0;
 uint8_t notePos = 0;
-
 char* notes[7] = {"A","B","C","D","E","F","G"};
 
 void displayTestShow(){
@@ -329,9 +298,7 @@ void TC4_Handler() { Adafruit_ZeroTimer::timerHandler(4); }
 
 serialIn serial(SerialUSB);
 MENU_INPUTS(in, &serial, &encStream);
-// MENU_INPUTS(in, &serial);
 MENU_OUTPUTS(out, MAX_DEPTH, U8G2_OUT(u8g2, colors, fontX, fontY, offsetX, offsetY, {0, 0, U8_Width / fontX, U8_Height / fontY}), SERIAL_OUT(SerialUSB));
-// MENU_OUTPUTS(out, MAX_DEPTH, SERIAL_OUT(SerialUSB), NONE);
 
 NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 
@@ -339,49 +306,7 @@ NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 // PANELS(webPanels, {0, 0, 80, 100});
 // jsonFmt<serialOut> jsonOut(SerialUSB, web_tops);
 
-void setup(){
-  SerialUSB.begin(115200);
-  // while(!SerialUSB);
-  SerialUSB.println("Start");
-
-  // Wire.begin();
-
-  // bank.add(knobs, Bank::CHANGE_ADDRESS);
-  // bank.add(sliders, Bank::CHANGE_ADDRESS);
-  // filePickMenu.begin();
-  // banksPickMenu.begin();
-
-  // LEDs
-  leds.begin();
-  leds.setBrightness(30);
-  // leds.setPixelColor(0, 0, 255, 0);
-
-  /********************* Timer #4, 8 bit, one callback with adjustable period */
-  zt4.configure(TC_CLOCK_PRESCALER_DIV64,     // prescaler
-                TC_COUNTER_SIZE_32BIT,        // bit width of timer/counter
-                TC_WAVE_GENERATION_MATCH_PWM // match style
-  );
-  zt4.setPeriodMatch(500, 100, 0);                                 // 1 match, channel 0
-  zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
-  zt4.enable(true);
-
-  delay(1000);
-
-  u8g2.begin();
-  u8g2.setFont(fontName);
-}
-
-uint8_t modifying = 0;
-uint8_t currentState = 0;
-
-void loop(){
-
-  // Disable SFL if not connected
-  mainMenu[0].enabled = (SerialUSB ? enabledStatus : disabledStatus);
-  mainMenu[1].enabled = (SerialUSB ? enabledStatus : disabledStatus);
-
-  leds.show();
-  // nav.poll();
+void doDisplay(){
   nav.doInput();
 
   if (nav.sleepTask || !navEnabled)
@@ -425,20 +350,28 @@ void loop(){
       do nav.doOutput(); while(u8g2.nextPage());
     //}
   }
+}
 
+uint8_t modifying = 0;
+
+void readFootSwitches(){
   // Read footswitches
-  for (uint8_t i = 0; i < 5; i++){
-    currentState = digitalRead(footSwitchPins[i]);
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    uint8_t currentState = digitalRead(footSwitchPins[i]);
 
     // Set LED color if the effect is turned on or off or blue for modifying
-    if (modifying == i && currentState == LOW){
+    if (modifying == i && currentState == LOW)
+    {
       // Set LED to blue so we know which effect we are modifying
       leds.setPixelColor(i, 0, 0, 255);
     }
-    else if (currentState == LOW){
+    else if (currentState == LOW)
+    {
       leds.setPixelColor(i, 0, 255, 0);
     }
-    else{
+    else
+    {
       leds.setPixelColor(i, 255, 0, 0);
     }
 
@@ -452,7 +385,45 @@ void loop(){
 
     footSwitchState[i] = currentState;
   }
+}
 
-    // Refresh the button (check whether the button's state has changed since last time, if so, send it over MIDI)
-    MIDI_Controller.refresh();
+void setup(){
+  SerialUSB.begin(115200);
+
+  // bank.add(knobs, Bank::CHANGE_ADDRESS);
+  // bank.add(sliders, Bank::CHANGE_ADDRESS);
+
+  // LEDs
+  leds.begin();
+  leds.setBrightness(30);
+  // leds.setPixelColor(0, 0, 255, 0);
+
+  /********************* Timer #4, 8 bit, one callback with adjustable period */
+  zt4.configure(TC_CLOCK_PRESCALER_DIV64,     // prescaler
+                TC_COUNTER_SIZE_32BIT,        // bit width of timer/counter
+                TC_WAVE_GENERATION_MATCH_PWM // match style
+  );
+  zt4.setPeriodMatch(500, 100, 0);                                 // 1 match, channel 0
+  zt4.setCallback(true, TC_CALLBACK_CC_CHANNEL0, timerIsr);        // set DAC in the callback
+  zt4.enable(true);
+
+  delay(1000);
+
+  u8g2.begin();
+  u8g2.setFont(fontName);
+}
+
+void loop(){
+
+  // Disable SFL if not connected
+  mainMenu[0].enabled = (SerialUSB ? enabledStatus : disabledStatus);
+  mainMenu[1].enabled = (SerialUSB ? enabledStatus : disabledStatus);
+
+  // TODO: Exit back to main on serial disconnect
+
+  leds.show();
+  nav.poll();
+  // doDisplay();
+  readFootSwitches();
+  MIDI_Controller.refresh();
 }
