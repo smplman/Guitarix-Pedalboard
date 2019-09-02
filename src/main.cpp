@@ -21,21 +21,21 @@
                   |                          |
                   | [ ]GND            VCC[ ] |
                   |              21/SCL[F]   |
-                  | [E]2               A3[C] |
+                  | [E]2               A3[B] |
                   |              20/SDA[F]   |
-                  |~[B]3   +--------+  A2[C] |
+                  |~[C]3   +--------+  A2[B] |
                   |        | SamD21 |        |
-                  |~[B]4   |  G18   |  A1[C] |
+                  |~[C]4   |  G18   |  A1[B] |
                   |        |        |        |
-                  |~[ ]5   +--------+  A0[C] |
+                  |~[ ]5   +--------+  A0[B] |
                   |                          |
                   |~[A]6               13[A]~|
                   |        +--------+        |
                   | [D]7   | Prog   |  12[A]~|
                   |        | Header |        |
-                  |~[B]8   +--------+  11[A]~|
+                  |~[C]8   +--------+  11[A]~|
                   |                          |
-                  |~[B]9               10[A]~|
+                  |~[C]9               10[A]~|
                   +--------------------------+
                   Sparkfun SAMD21 Mini Breakout
  */
@@ -44,9 +44,9 @@
 // [A]		Foot Switches
 //------------------------------------------------------------------
 // Connect commons to GND
-#define FOOTSWITCH_1_PIN (6)
-#define FOOTSWITCH_2_PIN (10)
-#define FOOTSWITCH_3_PIN (11)
+#define FOOTSWITCH_1_PIN (10)
+#define FOOTSWITCH_2_PIN (11)
+#define FOOTSWITCH_3_PIN (6)
 #define FOOTSWITCH_4_PIN (12)
 #define FOOTSWITCH_5_PIN (13)
 
@@ -54,28 +54,27 @@
 // [B]		Rotary Potentiometers
 //------------------------------------------------------------------
 // Connect + to VCC and - to GND
-#define ROTARY_1_PIN (3)
-#define ROTARY_2_PIN (4)
-#define ROTARY_3_PIN (8)
-#define ROTARY_4_PIN (9)
+#define ROTARY_1_PIN (A0)
+#define ROTARY_2_PIN (A1)
+#define ROTARY_3_PIN (A2)
+#define ROTARY_4_PIN (A3)
 
 //------------------------------------------------------------------
 // [C]		Slide Potentiometers
 //------------------------------------------------------------------
 // Connect + to VCC and - to GND
-#define SLIDE_1_PIN (A0)
-#define SLIDE_2_PIN (A1)
-#define SLIDE_3_PIN (A2)
-#define SLIDE_4_PIN (A3)
-
+#define SLIDE_1_PIN (A6)
+#define SLIDE_2_PIN (A7)
+#define SLIDE_3_PIN (A8)
+#define SLIDE_4_PIN (A9)
 
 //------------------------------------------------------------------
 // [D]		Rotary Encoder
 //------------------------------------------------------------------
 // Connect + to VCC and - to GND
-#define ENCODER_A_PIN (1)//(1)
-#define ENCODER_B_PIN (0)//(0)
-#define ENCODER_BTN_PIN (7)//(7)
+#define ENCODER_A_PIN (1)
+#define ENCODER_B_PIN (0)
+#define ENCODER_BTN_PIN (7)
 
 //------------------------------------------------------------------
 // [E]		LEDS
@@ -103,6 +102,7 @@
 #include <menuIO/clickEncoderIn.h>
 #include <menuIO/jsonFmt.h>
 #include "SerialMenu.h"
+#include "watermark.h"
 
 using namespace Menu;
 using namespace MIDI_CC;
@@ -126,30 +126,30 @@ Bank bank(4);
 const uint8_t channel = 1;
 
 // Foot switches
-const int footSwitchPins[5] = {6, 10, 11, 12, 13};
-int footSwitchState[5] = {0, 0, 0, 0, 0};
-// DigitalCC footSwitches[] = {
-//   {6, MIDI_CC::Effects_1, channel},
-//   {10, MIDI_CC::Effects_2, channel},
-//   {11, MIDI_CC::Effects_3, channel},
-//   {12, MIDI_CC::Effects_4, channel},
-//   {13, MIDI_CC::Effects_5, channel},
-// };
+const uint8_t footSwitchPins[5] = {6, 10, 11, 12, 13};
+uint8_t footSwitchState[5] = {0, 0, 0, 0, 0};
+DigitalCC footSwitches[] = {
+  {FOOTSWITCH_1_PIN, MIDI_CC::Effects_1, channel},
+  {FOOTSWITCH_2_PIN, MIDI_CC::Effects_2, channel},
+  {FOOTSWITCH_3_PIN, MIDI_CC::Effects_3, channel},
+  {FOOTSWITCH_4_PIN, MIDI_CC::Effects_4, channel},
+  {FOOTSWITCH_5_PIN, MIDI_CC::Effects_5, channel},
+};
 
 // Rotary Potentiometer
 // AnalogCC knobs[] = {
-//   {3, MIDI_CC::General_Purpose_Controller_1, channel},
-//   {4, MIDI_CC::General_Purpose_Controller_2, channel},
-//   {8, MIDI_CC::General_Purpose_Controller_3, channel},
-//   {9, MIDI_CC::General_Purpose_Controller_4, channel}
+//   {ROTARY_1_PIN, MIDI_CC::General_Purpose_Controller_1, channel},
+//   {ROTARY_2_PIN, MIDI_CC::General_Purpose_Controller_2, channel},
+//   {ROTARY_3_PIN, MIDI_CC::General_Purpose_Controller_3, channel},
+//   {ROTARY_4_PIN, MIDI_CC::General_Purpose_Controller_4, channel}
 // };
 
 // Slide Potentiometers
 // AnalogCC sliders[] = {
-//   {A0, MIDI_CC::General_Purpose_Controller_5, channel},
-//   {A1, MIDI_CC::General_Purpose_Controller_6, channel},
-//   {A2, MIDI_CC::General_Purpose_Controller_7, channel},
-//   {A3, MIDI_CC::General_Purpose_Controller_8, channel}
+//   {SLIDE_1_PIN, MIDI_CC::General_Purpose_Controller_5, channel},
+//   {SLIDE_2_PIN, MIDI_CC::General_Purpose_Controller_6, channel},
+//   {SLIDE_3_PIN, MIDI_CC::General_Purpose_Controller_7, channel},
+//   {SLIDE_4_PIN, MIDI_CC::General_Purpose_Controller_8, channel}
 // };
 
 // SSD1309 OLED Display
@@ -216,21 +216,22 @@ result stopAudio(eventMask event, navNode &nav, prompt &item){
 }
 
 /*
-0: effects
-1: looper
-2: tuner
-3: test
+0: loading
+1: effects
+2: looper
+3: tuner
+4: test
  */
 
 uint8_t mode = 0;
-bool navEnabled = true;
+bool navEnabled = false;
 
 result displayTest(eventMask event, navNode &nav, prompt &item){
   switch (event)
   {
     case enterEvent:
       navEnabled = false;
-      mode = 3;
+      mode = 4;
       break;
       // nav.idleOn();
       // SerialUSB.println("display");
@@ -306,35 +307,50 @@ NAVROOT(nav, mainMenu, MAX_DEPTH, in, out);
 // PANELS(webPanels, {0, 0, 80, 100});
 // jsonFmt<serialOut> jsonOut(SerialUSB, web_tops);
 
+bool loaded = false;
+
 void doDisplay(){
+  // Disable SFL if not connected
+  mainMenu[0].enabled = (SerialUSB ? enabledStatus : disabledStatus);
+  mainMenu[1].enabled = (SerialUSB ? enabledStatus : disabledStatus);
+
+  // TODO: Exit back to main on serial disconnect
+
+  if(!loaded && SerialUSB){
+    loaded = true;
+    mode = 1;
+  }
+
   nav.doInput();
 
   if (nav.sleepTask || !navEnabled)
   {
-    // SerialUSB.println('sleep');
     u8g2.firstPage();
     do {
-      // u8g2.setCursor(0, 15);
-      // u8g2.print("suspended");
       /*
-      0: effects
-      1: looper
-      2: tuner
-      3: test
+      0: loading
+      1: effects
+      2: looper
+      3: tuner
+      4: test
       */
 
       switch (mode)
       {
       case 0:
-
+        // Draw loading logo
+        u8g2.drawXBMP(0, 0, watermark_width, watermark_height, watermark_bits);
         break;
       case 1:
-
+        nav.doOutput();
         break;
       case 2:
-        // displayTuner();
+
         break;
       case 3:
+        // displayTuner();
+        break;
+      case 4:
         displayTestShow();
         break;
 
@@ -347,7 +363,10 @@ void doDisplay(){
       u8g2.firstPage();
       u8g2.setFont(fontName);
       u8g2.setFontPosBottom();
-      do nav.doOutput(); while(u8g2.nextPage());
+      do {
+        // nav.doOutput();
+        // u8g2.drawXBMP(0, 0, watermark_width, watermark_height, watermark_bits);
+      } while(u8g2.nextPage());
     //}
   }
 }
@@ -368,11 +387,11 @@ void readFootSwitches(){
     }
     else if (currentState == LOW)
     {
-      leds.setPixelColor(i, 0, 255, 0);
+      leds.setPixelColor(i, 0, 255, 0); // Green
     }
     else
     {
-      leds.setPixelColor(i, 255, 0, 0);
+      leds.setPixelColor(i, 255, 0, 0); // Red
     }
 
     // Set MIDI Channel if an effect is turned on by foot switch
@@ -396,7 +415,6 @@ void setup(){
   // LEDs
   leds.begin();
   leds.setBrightness(30);
-  // leds.setPixelColor(0, 0, 255, 0);
 
   /********************* Timer #4, 8 bit, one callback with adjustable period */
   zt4.configure(TC_CLOCK_PRESCALER_DIV64,     // prescaler
@@ -414,16 +432,9 @@ void setup(){
 }
 
 void loop(){
-
-  // Disable SFL if not connected
-  mainMenu[0].enabled = (SerialUSB ? enabledStatus : disabledStatus);
-  mainMenu[1].enabled = (SerialUSB ? enabledStatus : disabledStatus);
-
-  // TODO: Exit back to main on serial disconnect
-
   leds.show();
-  nav.poll();
-  // doDisplay();
+  // nav.poll();
+  doDisplay();
   readFootSwitches();
   MIDI_Controller.refresh();
 }

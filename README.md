@@ -20,6 +20,9 @@ This is a personal project to use an Arduino to build a midi controller that wor
 
 *<https://github.com/adafruit/Adafruit_ZeroDMA>
 
+## Enable extra analog inputs on the SAMD21
+*<https://forum.arduino.cc/index.php?topic=363393.0>
+
 ## Inspiration / helpful links
 
 *<https://medium.com/@atippy83/guitarix-the-pi-dle-board-8d6298ca8e42>

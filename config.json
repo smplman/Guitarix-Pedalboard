@@ -1,5 +1,5 @@
 {
-    "serialPort": "COM16",
+    "serialPort": "COM4",
     "backingTracksPath": ".",
     "banksPath": "./banks"
 }
