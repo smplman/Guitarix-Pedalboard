@@ -3,15 +3,19 @@
 # Kill running processes
 pkill jackd
 pkill guitarix
+sleep 5
 
 # Start jackd
 JACK_NO_AUDIO_RESERVATION=1 /usr/bin/jackd -d alsa -d hw:1 -r 192000 -p 512 -n 2 &
+sleep 5
 
 # Start guitarix
 guitarix -i system:capture_1 -o system:playback_1 -o system:playback_2 -b A:0 -N &
+sleep 5
 
 # Start a2jmidid for midi controller
 a2jmidid -e &
+sleep 5
 
 # configure jackd ports
 # list ports
