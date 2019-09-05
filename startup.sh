@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Kill running processes
 pkill jackd
 pkill guitarix
