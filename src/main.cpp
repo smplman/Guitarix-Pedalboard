@@ -126,7 +126,7 @@ Bank bank(4);
 const uint8_t channel = 1;
 
 // Foot switches
-const uint8_t footSwitchPins[5] = {6, 10, 11, 12, 13};
+const uint8_t footSwitchPins[5] = {10, 11, 6, 12, 13};
 uint8_t footSwitchState[5] = {0, 0, 0, 0, 0};
 DigitalCC footSwitches[] = {
   {FOOTSWITCH_1_PIN, MIDI_CC::Effects_1, channel},
@@ -137,20 +137,20 @@ DigitalCC footSwitches[] = {
 };
 
 // Rotary Potentiometer
-// AnalogCC knobs[] = {
-//   {ROTARY_1_PIN, MIDI_CC::General_Purpose_Controller_1, channel},
-//   {ROTARY_2_PIN, MIDI_CC::General_Purpose_Controller_2, channel},
-//   {ROTARY_3_PIN, MIDI_CC::General_Purpose_Controller_3, channel},
-//   {ROTARY_4_PIN, MIDI_CC::General_Purpose_Controller_4, channel}
-// };
+AnalogCC knobs[] = {
+  {ROTARY_1_PIN, MIDI_CC::General_Purpose_Controller_1, channel},
+  {ROTARY_2_PIN, MIDI_CC::General_Purpose_Controller_2, channel},
+  {ROTARY_3_PIN, MIDI_CC::General_Purpose_Controller_3, channel},
+  {ROTARY_4_PIN, MIDI_CC::General_Purpose_Controller_4, channel}
+};
 
 // Slide Potentiometers
-// AnalogCC sliders[] = {
-//   {SLIDE_1_PIN, MIDI_CC::General_Purpose_Controller_5, channel},
-//   {SLIDE_2_PIN, MIDI_CC::General_Purpose_Controller_6, channel},
-//   {SLIDE_3_PIN, MIDI_CC::General_Purpose_Controller_7, channel},
-//   {SLIDE_4_PIN, MIDI_CC::General_Purpose_Controller_8, channel}
-// };
+AnalogCC sliders[] = {
+  {SLIDE_1_PIN, MIDI_CC::General_Purpose_Controller_5, channel}, //A6,3
+  {SLIDE_2_PIN, MIDI_CC::General_Purpose_Controller_6, channel}, //A7,4
+  {SLIDE_3_PIN, MIDI_CC::General_Purpose_Controller_7, channel}, //A8,8
+  {SLIDE_4_PIN, MIDI_CC::General_Purpose_Controller_8, channel} //A9,9
+};
 
 // SSD1309 OLED Display
 U8G2_SSD1309_128X64_NONAME0_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, DISPLAY_SCL, DISPLAY_SDA);
@@ -409,8 +409,8 @@ void readFootSwitches(){
 void setup(){
   SerialUSB.begin(115200);
 
-  // bank.add(knobs, Bank::CHANGE_ADDRESS);
-  // bank.add(sliders, Bank::CHANGE_ADDRESS);
+  bank.add(knobs, Bank::CHANGE_ADDRESS);
+  bank.add(sliders, Bank::CHANGE_ADDRESS);
 
   // LEDs
   leds.begin();

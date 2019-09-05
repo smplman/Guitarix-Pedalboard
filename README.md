@@ -23,6 +23,9 @@ This is a personal project to use an Arduino to build a midi controller that wor
 ## Enable extra analog inputs on the SAMD21
 *<https://forum.arduino.cc/index.php?topic=363393.0>
 
+## Oled Graphics
+*<https://sandhansblog.wordpress.com/2017/04/16/interfacing-displaying-a-custom-graphic-on-an-0-96-i2c-oled/>
+
 ## Inspiration / helpful links
 
 *<https://medium.com/@atippy83/guitarix-the-pi-dle-board-8d6298ca8e42>
